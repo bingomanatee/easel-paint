@@ -1,0 +1,112 @@
+$icon_width: -60px;
+$icon_button_width: 30px;
+
+.paint-editor {
+  .draw_buttons button {
+    width: $icon_button_width;
+    height: $icon_button_width;
+    background-image: url(/img/draw_icons.png);
+    background-position: left top;
+    background-repeat: no-repeat;
+    -webkit-appearance: none;
+    border: none;
+    background-color: transparent;
+  }
+
+  .draw_buttons {
+    button.rectangle {
+      background-position: left top;
+      &:hover {
+        background-position: left $icon_width;
+      }
+      &.active {
+        background-position: left $icon_width * 2;
+      }
+    }
+
+    button.circle {
+      background-position: $icon_width top;
+      &:hover {
+        background-position: $icon_width $icon_width;
+      }
+      &.active {
+        background-position: $icon_width  $icon_width * 2;
+      }
+    }
+
+    button.triangle {
+      background-position: $icon_width * 2 top;
+      &:hover {
+        background-position: $icon_width * 2 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 2 $icon_width * 2
+      }
+    }
+
+    button.polygon {
+      background-position: $icon_width * 3 top;
+      &:hover {
+        background-position: $icon_width * 3 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 3  $icon_width * 2;
+      }
+    }
+    button.remove {
+      background-position: $icon_width * 4 top;
+      &:hover {
+        background-position: $icon_width * 4 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 4 $icon_width * 2;
+      }
+    }
+    button.move_up {
+      background-position: $icon_width * 5 top;
+      &:hover {
+        background-position: $icon_width * 5 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 5 $icon_width * 2;
+      }
+    }
+    button.move_down {
+      background-position: $icon_width * 6 top;
+      &:hover {
+        background-position: $icon_width * 6 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 6 $icon_width * 2;
+      }
+    }
+    button.clone {
+      background-position: $icon_width * 7 top;
+      &:hover {
+        background-position: $icon_width * 7 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 7 $icon_width * 2;
+      }
+    }
+    button.max_width {
+      background-position: $icon_width * 8 top;
+      &:hover {
+        background-position: $icon_width * 8 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 8 $icon_width * 2;
+      }
+    }
+    button.max_height {
+      background-position: $icon_width * 9 top;
+      &:hover {
+        background-position: $icon_width * 9 $icon_width;
+      }
+      &.active {
+        background-position: $icon_width * 9 $icon_width * 2;
+      }
+    }
+  }
+
+}
