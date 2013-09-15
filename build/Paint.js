@@ -38,6 +38,168 @@
     })
 })(window);;(function (window) {
 
+    var BOX_COLOR = 'rgb(0,0,0)';
+
+    function make_box_container(manager) {
+        manager.box_container = new createjs.Container();
+        manager.box_container.x = manager.box_container.y = manager.grid_size();
+        manager.stage.addChild(manager.box_container);
+    }
+
+    function move_around(dim, shape, manager, HANDLE_SIZE) {
+        return function () {
+            var target = manager.active_shape;
+            if (!target) return;
+
+            if (dim.h) {
+                shape.x = target.get_right()
+            } else {
+                shape.x = target.get_left() - HANDLE_SIZE;
+            }
+
+            if (dim.v) {
+                shape.y = target.get_bottom();
+            } else {
+                shape.y = target.get_top() - HANDLE_SIZE;
+            }
+        }
+    }
+
+    function make_move_boxes(manager) {
+
+        manager.move_boxes = function () {
+
+            var HANDLE_SIZE = manager.grid_size();
+            var active_shape = manager.active_shape;
+
+            if (!active_shape) {
+                _.each(manager._boxes, function (box) {
+                    box.visible = false;
+                })
+            } else {
+                console.log('active shape x:', active_shape.get_x(), ',y:', active_shape.get_y(),
+                    'width:', active_shape.get_width(), ',h:', active_shape.get_height());
+                console.log('    left:', active_shape.get_left(), ', top:', active_shape.get_top(),
+                    ',right:', active_shape.get_right(), ',bottom:', active_shape.get_bottom()
+                );
+
+                _.each(manager._box_hs, function (boxes, i) {
+                    _.each(boxes, function (box) {
+                        box.visible = true;
+                        switch (i) {
+                            case 0:
+                                box.x = active_shape.get_left();
+                                break;
+
+                            case 1:
+                                box.x = active_shape.get_right() + HANDLE_SIZE;
+                                break;
+                        }
+                    });
+                })
+
+                _.each(manager._box_vs, function (boxes, i) {
+                    _.each(boxes, function (box) {
+                        box.visible = true;
+                        switch (i) {
+                            case 0:
+                                box.y = active_shape.get_top();
+                                break;
+
+                            case 1:
+                                box.y = active_shape.get_bottom() + HANDLE_SIZE;
+                                break;
+                        }
+                    });
+                })
+            }
+
+            manager.update();
+        }
+    }
+
+    function make_boxes(manager) {
+
+        function gd(value) {
+            return value - (value % manager.grid_size());
+        }
+
+        var HANDLE_SIZE = manager.grid_size();
+
+        manager._box_hs = [
+            [],
+            []
+        ];
+        manager._box_vs = [
+            [],
+            []
+        ];
+
+        manager._boxes = _.map(
+            [
+                {h: 0, v: 0},
+                {h: 1, v: 0},
+                {h: 0, v: 1},
+                {h: 1, v: 1}
+            ], function (dim) {
+                var shape = new createjs.Shape();
+                manager.box_container.addChild(shape);
+                manager._box_hs[dim.h].push(shape);
+                manager._box_vs[dim.v].push(shape);
+
+                shape.graphics.f(BOX_COLOR).r(0, 0, HANDLE_SIZE, HANDLE_SIZE).es();
+                shape.__move_around = move_around(dim, shape, manager, HANDLE_SIZE);
+
+                shape.addEventListener('mousedown', function (event) {
+                    if (!manager.active_shape) return;
+
+                    event.addEventListener('mousemove', function (evt) {
+
+                        _.each(manager._box_hs[dim.h], function (shape) {
+                            shape.x = gd(evt.stageX);
+                        });
+                        _.each(manager._box_vs[dim.v], function (shape) {
+                            shape.y = gd(evt.stageY);
+                        });
+
+                        if (manager.active_shape) {
+                            var x = Math.min(manager._box_hs[1][0].x, manager._box_hs[0][0].x);
+                            var y = Math.min(manager._box_vs[1][0].y, manager._box_vs[0][0].y);
+
+                            var width = Math.max(manager.grid_size(), Math.max(manager._box_hs[1][0].x, manager._box_hs[0][0].x) - x - manager.grid_size());
+                            var height = Math.max(manager.grid_size(), Math.max(manager._box_vs[1][0].y, manager._box_vs[0][0].y) - y - manager.grid_size());
+
+                            manager.active_shape.set_width(width).set_height(height).set_x(x).set_y(y).draw();
+                            manager.update();
+                        }
+
+                        manager.update();
+                    });
+
+                });
+
+                return shape;
+
+            }, manager);
+
+        manager.show_boxes();
+    }
+
+    angular.module('Paint').factory('Paint_Manager_Boxes', function () {
+
+        return function (manager) {
+
+            make_box_container(manager);
+
+            make_boxes(manager);
+
+            make_move_boxes(manager);
+
+        }
+
+    })
+})(window);;(function (window) {
+
     function Point_Manager_Shape(manager, type) {
         this.type = type;
         this.manager = manager;
@@ -60,11 +222,19 @@
             return this._color;
         },
 
+        set_color: function (color) {
+            //@TODO: validate
+            this._color = color;
+            this.draw();
+            return this;
+        },
+
         make_draggable: function () {
             this.shape.addEventListener('mousedown', _.bind(this._on_mousedown, this));
         },
 
         _on_mousedown: function (event) {
+            this.manager.activate(this);
             event.addEventListener('mousemove', _.bind(this._on_mousemove(event), this));
 
             event.addEventListener('mouseup', _.bind(this._on_mouseup, this));
@@ -76,19 +246,23 @@
         },
 
         _on_mousemove: function (event) {
+            var self = this;
+            var start_x = this.get_x();
+            var start_y = this.get_y();
+
             return function (move_event) {
 
-                var x = this.get_x() + move_event.stageX - event.stageX;
+                var x = start_x + move_event.stageX - event.stageX;
                 x = Math.max(0, Math.min(x, this.manager.screen_width(true) - this.get_width()));
                 x -= x % this.manager.grid_size();
-                var y = this.get_y() + move_event.stageY - event.stageY;
+                var y = start_y + move_event.stageY - event.stageY;
                 y = Math.max(0, Math.min(y, this.manager.screen_height(true) - this.get_height()));
                 y -= y % this.manager.grid_size();
 
-                console.log('x: ', x, 'y', y);
-
-                this.shape.x = x;
-                this.shape.y = y;
+                this.set_x(x);
+                this.set_y(y);
+                this.draw();
+                this.manager.move_boxes();
 
                 this.manager.update();
             }
@@ -113,6 +287,16 @@
             return this._height;
         },
 
+        set_width: function (w) {
+            this._width = w;
+            return this;
+        },
+
+        set_height: function (h) {
+            this._height = h;
+            return this;
+        },
+
         get_x: function () {
             return this._x;
         },
@@ -121,12 +305,30 @@
             return this._y;
         },
 
+        get_left: function () {
+            return this.get_x();
+        },
+
+        get_top: function () {
+            return this.get_y();
+        },
+
+        get_bottom: function () {
+            return this.get_height() + this.get_y();
+        },
+
+        get_right: function () {
+            return this.get_width() + this.get_x();
+        },
+
         set_x: function (x) {
-            return this._x = x;
+            this._x = this.shape.x = x;
+            return this;
         },
 
         set_y: function (y) {
-            return this._y = y;
+            this._y = this.shape.y = y;
+            return this;
         }
 
     };
@@ -145,123 +347,147 @@
     var DEFAULT_GRID_SIZE = 20;
     var DEFAULT_SCREEN_MARGIN = 50;
 
-    angular.module('Paint').factory('Paint_Manager', function (Paint_Manager_Grid, Paint_Manager_Shape) {
+    angular.module('Paint').factory('Paint_Manager',
+        function (Paint_Manager_Grid, Paint_Manager_Shape, Paint_Manager_Boxes) {
 
-        function Paint_Manager(params) {
-            this.scope = params.scope;
-            var canvas = $(params.ele).find('canvas.paint-canvas')[0];
+            function Paint_Manager(params) {
+                this.scope = params.scope;
+                var canvas = $(params.ele).find('canvas.paint-canvas')[0];
 
-            this.canvas = canvas;
-            canvas.width = this.screen_width();
-            canvas.height = this.screen_height();
+                this.canvas = canvas;
+                canvas.width = this.screen_width();
+                canvas.height = this.screen_height();
 
-            this.stage = new createjs.Stage(canvas);
-            this.shapes = [];
-            console.log('new paint manager created');
+                this.stage = new createjs.Stage(canvas);
+                this.shapes = [];
+                console.log('new paint manager created');
 
-            this.make_grid();
+                this.make_grid();
 
-            this.make_frame();
+                this.make_frame();
 
-            this.make_draw_container();
+                this.make_draw_container();
 
-            this.add_button_bindings();
-        }
+                Paint_Manager_Boxes(this);
 
-        Paint_Manager.prototype = {
-
-            make_draw_container: function () {
-                this.draw_container = new createjs.Container();
-                this.frame.addChild(this.draw_container);
-            },
-
-            make_frame: function () {
-                this.frame = new createjs.Container();
-                this.frame.x = this.frame.y = this.margin();
-
-                this.stage.addChild(this.frame);
-            },
-
-            add_button_bindings: function () {
-                this.scope.add_rectangle = _.bind(this.add_rectangle, this);
-            },
-
-            add_rectangle: function () {
-                var shape = this.add_shape('rectangle');
-            },
-
-            shapes_to_dc: function(){
-                this.draw_container.removeAllChildren();
-
-                _.each(this.shapes, function(shape){
-                    this.addChild(shape.shape);
-                }, this.draw_container);
-            },
-
-            add_shape: function (type) {
-                var shape =  Paint_Manager_Shape(this, type);
-                console.log('new shape ', shape);
-                this.shapes.push(shape);
-                this.shapes_to_dc();
-
-                this.update();
-                return shape;
-            },
-
-            update: function(){
-                this.stage.update();
-            },
-
-            make_grid: Paint_Manager_Grid,
-
-            grid_size: function () {
-                var pc = this.scope.paint_canvas;
-                if (!pc || !pc.grid) {
-                    return DEFAULT_GRID_SIZE;
-                }
-                return Number(pc.grid);
-            },
-
-            margin: function () {
-                var pc = this.scope.paint_canvas;
-
-                if (!pc || !pc.margin) return DEFAULT_SCREEN_MARGIN;
-                return Number(pc.margin);
-            },
-
-            screen_width: function (inner) {
-                var pc = this.scope.paint_canvas;
-
-                if (inner) {
-                    var width = this.screen_width();
-                    width -= (2 * this.margin());
-                    return width;
-                }
-
-                if (!pc || (!pc.width)) return DEFAULT_SCREEN_WIDTH;
-                return Number(pc.width);
-            },
-
-            screen_height: function (inner) {
-                var pc = this.scope.paint_canvas;
-
-                if (inner) {
-                    var height = this.screen_height();
-                    height -= (2 * this.margin());
-                    return height;
-                }
-
-                if (!pc || (!pc.height)) return DEFAULT_SCREEN_HEIGHT;
-                return Number(pc.height);
+                this.add_button_bindings();
             }
 
-        };
+            Paint_Manager.prototype = {
 
-        return function (scope, ele) {
-            return new Paint_Manager({scope: scope, ele: ele});
-        }
+                show_boxes: function () {
+                    var target = this.active_shape;
 
-    })
+                    if (target && target.type == 'polygon') {
+                        target = false;
+                    }
+
+                    _.each(this._boxes, function (box) {
+                        box.visible = !!target;
+                        if (target) box.__move_around();
+                    }, this);
+
+                    this.update();
+                },
+
+                make_draw_container: function () {
+                    this.draw_container = new createjs.Container();
+                    this.frame.addChild(this.draw_container);
+                },
+
+                activate: function (shape) {
+                    this.active_shape = shape;
+                    this.move_boxes();
+                },
+
+                make_frame: function () {
+                    this.frame = new createjs.Container();
+                    this.frame.x = this.frame.y = this.margin();
+
+                    this.stage.addChild(this.frame);
+                },
+
+                add_button_bindings: function () {
+                    this.scope.add_rectangle = _.bind(this.add_rectangle, this);
+                },
+
+                add_rectangle: function () {
+                    var shape = this.add_shape('rectangle');
+                },
+
+                shapes_to_dc: function () {
+                    this.draw_container.removeAllChildren();
+
+                    _.each(this.shapes, function (shape) {
+                        this.addChild(shape.shape);
+                    }, this.draw_container);
+                },
+
+                add_shape: function (type) {
+                    var shape = Paint_Manager_Shape(this, type);
+                    shape.set_color(this.scope.current_color);
+                    console.log('new shape ', shape);
+                    this.shapes.push(shape);
+                    this.shapes_to_dc();
+
+                    this.update();
+                    return shape;
+                },
+
+                update: function () {
+                    this.stage.update();
+                },
+
+                make_grid: Paint_Manager_Grid,
+
+                grid_size: function () {
+                    var pc = this.scope.paint_canvas;
+                    if (!pc || !pc.grid) {
+                        return DEFAULT_GRID_SIZE;
+                    }
+                    return Number(pc.grid);
+                },
+
+                margin: function () {
+                    var pc = this.scope.paint_canvas;
+
+                    if (!pc || !pc.margin) return DEFAULT_SCREEN_MARGIN;
+                    return Number(pc.margin);
+                },
+
+                screen_width: function (inner) {
+                    var pc = this.scope.paint_canvas;
+
+                    if (inner) {
+                        var width = this.screen_width();
+                        width -= (2 * this.margin());
+                        return width;
+                    }
+
+                    if (!pc || (!pc.width)) return DEFAULT_SCREEN_WIDTH;
+                    return Number(pc.width);
+                },
+
+                screen_height: function (inner) {
+                    var pc = this.scope.paint_canvas;
+
+                    if (inner) {
+                        var height = this.screen_height();
+                        height -= (2 * this.margin());
+                        return height;
+                    }
+
+                    if (!pc || (!pc.height)) return DEFAULT_SCREEN_HEIGHT;
+                    return Number(pc.height);
+                }
+
+            };
+
+            return function (scope, ele) {
+                return new Paint_Manager({scope: scope, ele: ele});
+            }
+
+        })
 })
     (window);;(function () {
 
@@ -280,6 +506,8 @@
                     var grid = Number($linkAttributes.grid || 30);
                     var margin = Number($linkAttributes.margin || 50);
                     $scope.paint_canvas = {width: width, height: height, grid: grid, margin: margin};
+
+                    $scope.current_color="rgb(255, 0, 0)";
 
                     $scope.paint_manager = Paint_Manager($scope, $linkElement);
 

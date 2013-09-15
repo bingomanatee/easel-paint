@@ -3,8 +3,13 @@
 <canvas class="paint-canvas" style="border: 1px solid black">
 
 </canvas>
+<div class="controls">
 <div class="draw_buttons">
-<button class="rectangle" title="add rectangle" ng-click="add_rectangle()">
-
-</button>
+<button class="rectangle" title="add rectangle" ng-click="add_rectangle()"></button>
 </div>
+            <div class="color">
+                <label for="colorInput">Color</label>
+                <input id="colorInput" class="input input-small" type="text" ng-model="current_color" />
+                <button class="btn" ng-click="choose_color()">Choose</button>
+            </div>
+        </div>
