@@ -12,6 +12,8 @@ module.exports = function (grunt) {
                 src: [
                     'lib/paint/module.js',
                     'lib/paint/Shape.js',
+                    'lib/paint/Paint_Manager/Grid.js',
+                    'lib/paint/Paint_Manager.js',
                     'lib/paint/directives/editor.js'
                 ],
                 dest: 'build/Paint.js'
