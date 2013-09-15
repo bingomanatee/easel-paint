@@ -1,10 +1,16 @@
 (function(){
 
-    function PaintCtrl($scope, $filter, $compile, $modal, Paint, $window){
-       $scope.foo = "Foo"
+    function PaintCtrl($scope, $filter, $compile, $window){
+       $scope.foo = "Foo";
+
+        $scope.$watch('current_color', function(color){
+            console.log('current color set to ', color);
+            $scope.set_current_color(color);
+        });
     }
 
-    PaintCtrl.$inject = ['$scope', '$filter', '$compile', '$modal', 'Paint', '$window'];
+    PaintCtrl.$inject = ['$scope', '$filter', '$compile', '$window'];
 
     angular.module('PaintApp').controller('PaintCtrl', PaintCtrl);
+
 })(window);

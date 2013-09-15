@@ -70,6 +70,12 @@
       background-position: -540px -60px; }
     .paint-editor .controls .draw_buttons button.max_height.active {
       background-position: -540px -120px; }
+  .paint-editor .controls .draw_buttons button.rotate {
+    background-position: -600px top; }
+    .paint-editor .controls .draw_buttons button.rotate:hover {
+      background-position: -600px -60px; }
+    .paint-editor .controls .draw_buttons button.rotate.active {
+      background-position: -600px -120px; }
 .paint-editor .controls .color {
   width: 300px;
   display: inline-block; }

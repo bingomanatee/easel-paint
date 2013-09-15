@@ -4,12 +4,15 @@
 
 </canvas>
 <div class="controls">
-<div class="draw_buttons">
-<button class="rectangle" title="add rectangle" ng-click="add_rectangle()"></button>
+    <div class="draw_buttons">
+        <button class="rectangle" title="add rectangle" ng-click="add_rectangle()"></button>
+        <button class="circle" title="add oval" ng-click="add_oval()"></button>
+        <button class="triangle" title="add triangle" ng-click="add_triangle()"></button>
+        <button class="rotate" title="rotate" ng-click="rotate()"></button>
+    </div>
+    <div class="color">
+        <label for="colorInput">Color</label>
+        <input id="colorInput" class="input input-small" type="text" ng-model="current_color"/>
+        <button class="btn" ng-click="choose_color()">Choose</button>
+    </div>
 </div>
-            <div class="color">
-                <label for="colorInput">Color</label>
-                <input id="colorInput" class="input input-small" type="text" ng-model="current_color" />
-                <button class="btn" ng-click="choose_color()">Choose</button>
-            </div>
-        </div>

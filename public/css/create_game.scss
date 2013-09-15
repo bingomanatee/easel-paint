@@ -111,6 +111,15 @@ $icon_button_width: 30px;
           background-position: $icon_width * 9 $icon_width * 2;
         }
       }
+      button.rotate {
+        background-position: $icon_width * 10 top;
+        &:hover {
+          background-position: $icon_width * 10 $icon_width;
+        }
+        &.active {
+          background-position: $icon_width * 10 $icon_width * 2;
+        }
+      }
     }
 
     .color {

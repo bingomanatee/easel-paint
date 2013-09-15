@@ -37,8 +37,8 @@
 
     })
 })(window);;(function (window) {
-
-    var BOX_COLOR = 'rgb(0,0,0)';
+    var _DEBUG = false;
+    var BOX_COLOR = 'rgba(0,0,0, 0.33)';
 
     function make_box_container(manager) {
         manager.box_container = new createjs.Container();
@@ -77,9 +77,9 @@
                     box.visible = false;
                 })
             } else {
-                console.log('active shape x:', active_shape.get_x(), ',y:', active_shape.get_y(),
+              if (_DEBUG)  console.log('active shape x:', active_shape.get_x(), ',y:', active_shape.get_y(),
                     'width:', active_shape.get_width(), ',h:', active_shape.get_height());
-                console.log('    left:', active_shape.get_left(), ', top:', active_shape.get_top(),
+                if (_DEBUG)    console.log('    left:', active_shape.get_left(), ', top:', active_shape.get_top(),
                     ',right:', active_shape.get_right(), ',bottom:', active_shape.get_bottom()
                 );
 
@@ -203,7 +203,9 @@
     function Point_Manager_Shape(manager, type) {
         this.type = type;
         this.manager = manager;
+        this.container = new createjs.Container();
         this.shape = new createjs.Shape();
+        this.container.addChild(this.shape);
         this.init_dims();
         this.make_draggable();
         this.draw();
@@ -212,21 +214,11 @@
     Point_Manager_Shape.prototype = {
 
         init_dims: function () {
+            this._rotation = 0;
             this._x = this._y = 0;
             this._width = this.manager.grid_size() * 4;
             this._height = this.manager.grid_size() * 4;
             this._color = 'rgb(0,0,0)';
-        },
-
-        get_color: function () {
-            return this._color;
-        },
-
-        set_color: function (color) {
-            //@TODO: validate
-            this._color = color;
-            this.draw();
-            return this;
         },
 
         make_draggable: function () {
@@ -241,8 +233,6 @@
         },
 
         _on_mouseup: function () {
-            this.set_x(this.shape.x);
-            this.set_y(this.shape.y);
         },
 
         _on_mousemove: function (event) {
@@ -269,14 +259,63 @@
         },
 
         draw: function () {
+
+            this.shape.graphics.c().f(this.get_color());
+            var x2 = this.get_width() / 2;
+            var y2 = this.get_height() / 2;
+            this.shape.x = x2;
+            this.shape.y = y2;
+
+            this.shape.rotation = this.get_rotation();
             switch (this.type) {
                 case 'rectangle':
-                    this.shape.graphics.c().f(this.get_color()).r(0, 0, this.get_width(), this.get_height()).ef();
+                    this.shape.graphics.mt(-x2, -y2).lt(x2, -y2).lt(x2, y2).lt(-x2, y2).ef();
+                    break;
+
+                case 'oval':
+                    var diameter = Math.min(this.get_width(), this.get_height());
+                    var radius = diameter / 2;
+                    this.shape.graphics.dc(0, 0, radius);
+
+                    this.shape.scaleX = this.shape.scaleY = 1;
+
+                    if (this.get_width() > this.get_height()) {
+                        this.shape.scaleX = this.get_width() / this.get_height();
+                    } else if (this.get_width() < this.get_height()) {
+                        this.shape.scaleY = this.get_height() / this.get_width();
+                    }
+                    break;
+
+                case 'triangle':
+                    this.shape.graphics.mt(-x2, y2)
+                        .lt(0, -y2)
+                        .lt(x2, y2);
                     break;
 
                 default:
                     throw new Error('bad type ' + this.type);
             }
+        },
+
+        /* ******************** PROPERTIES ****************** */
+
+        set_rotation: function (r) {
+            this._rotation = r % 360;
+        },
+
+        get_rotation: function () {
+            return this._rotation;
+        },
+
+        get_color: function () {
+            return this._color;
+        },
+
+        set_color: function (color) {
+            //@TODO: validate
+            this._color = color;
+            this.draw();
+            return this;
         },
 
         get_width: function () {
@@ -301,6 +340,14 @@
             return this._x;
         },
 
+        get_center_h: function () {
+            return (this.get_left() + this.get_right()) / 2;
+        },
+
+        get_center_v: function () {
+            return (this.get_top() + this.get_bottom()) / 2;
+        },
+
         get_y: function () {
             return this._y;
         },
@@ -322,12 +369,12 @@
         },
 
         set_x: function (x) {
-            this._x = this.shape.x = x;
+            this._x = this.container.x = x;
             return this;
         },
 
         set_y: function (y) {
-            this._y = this.shape.y = y;
+            this._y = this.container.y = y;
             return this;
         }
 
@@ -371,9 +418,23 @@
                 Paint_Manager_Boxes(this);
 
                 this.add_button_bindings();
+
+                this.add_form_bindings();
             }
 
             Paint_Manager.prototype = {
+                add_form_bindings: function () {
+                    this.scope.set_current_color = _.bind(this.set_current_color, this);
+                },
+
+                set_current_color: function(c){
+                    this._current_color = c;
+                    if (this.active_shape){
+                        this.active_shape.set_color(c);
+                        this.update();
+                    }
+
+                },
 
                 show_boxes: function () {
                     var target = this.active_shape;
@@ -408,18 +469,31 @@
                 },
 
                 add_button_bindings: function () {
-                    this.scope.add_rectangle = _.bind(this.add_rectangle, this);
+                    this.scope.add_rectangle = this._shape_button_fn('rectangle');
+                    this.scope.add_oval = this._shape_button_fn('oval');
+                    this.scope.add_triangle = this._shape_button_fn('triangle');
+                    this.scope.rotate = _.bind(this.rotate, this);
                 },
 
-                add_rectangle: function () {
-                    var shape = this.add_shape('rectangle');
+                rotate: function () {
+                    if (this.active_shape) {
+                        this.active_shape.set_rotation(this.active_shape.get_rotation() + 45);
+                        this.active_shape.draw();
+                        this.update();
+                    }
+                },
+
+                _shape_button_fn: function (type) {
+                    return _.bind(function () {
+                        this.add_shape(type);
+                    }, this);
                 },
 
                 shapes_to_dc: function () {
                     this.draw_container.removeAllChildren();
 
                     _.each(this.shapes, function (shape) {
-                        this.addChild(shape.shape);
+                        this.addChild(shape.container);
                     }, this.draw_container);
                 },
 
