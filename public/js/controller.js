@@ -5,7 +5,9 @@
 
         $scope.$watch('current_color', function(color){
             console.log('current color set to ', color);
-            $scope.set_current_color(color);
+            if (color){
+                $scope.set_current_color(color);
+            }
         });
     }
 

@@ -14,6 +14,7 @@ module.exports = function (grunt) {
                     'lib/paint/Manager/Grid.js',
                     'lib/paint/Manager/Boxes.js',
                     'lib/paint/Manager/Shape.js',
+                    'lib/paint/Manager/Color_Palette.js',
                     'lib/paint/Manager.js',
                     'lib/paint/directives/editor.js'
                 ],
