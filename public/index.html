@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Easel Paint</title>
+</head>
+<body>
+<h1>Easel-Paint</h1>
+
+<div ng-app="PaintApp">
+    <div ng-contoller="PaintCtrl">
+        <p>Foo: {{ foo }}</p>
+
+        <div paint-editor>
+            ... loading easel paint
+        </div>
+
+    </div>
+</div>
+
+<script src="/js/vendor/jquery-1.10.2.min.js">
+</script>
+<script src="/js/vendor/easel/easeljs-0.6.1.min.js">
+</script>
+<script src="/js/vendor/angular/angular.js">
+</script>
+<script src="/js/vendor/underscore-min.js">
+</script>
+<script src="/js/vendor/angular/ng-grid.min.js">
+    // requires angular
+</script>
+<script src="/js/Paint.js" defer="defer">
+    // requires app, angular, underscore, easel
+</script>
+<script src="/js/app.js" defer="defer">
+    // requires angular, angular-resource
+</script><script src="/js/controller.js" defer="defer">
+    // requires angular, angular-resource
+</script>
+</body>
+</html>

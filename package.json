@@ -1,0 +1,27 @@
+{
+  "name": "easel-paint",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/bingomanatee/easel-paint.git"
+  },
+  "author": "",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/bingomanatee/easel-paint/issues"
+  },
+  "dependencies": {
+    "static": "~2.0.0",
+    "node-static": "~0.7.1"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-uglify": "~0.2.4"
+  }
+}
