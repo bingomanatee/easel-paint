@@ -1,0 +1,116 @@
+.paint-editor .controls {
+  height: 45px;
+  display: block; }
+  .paint-editor .controls .draw_buttons {
+    width: 370px;
+    display: inline-block; }
+    .paint-editor .controls .draw_buttons button {
+      width: 30px;
+      height: 30px;
+      background-image: url(/img/draw_icons.png);
+      background-position: left top;
+      background-repeat: no-repeat;
+      -webkit-appearance: none;
+      border: none;
+      background-color: transparent;
+      top: 2px;
+      display: inline-block;
+      margin: 0px; }
+    .paint-editor .controls .draw_buttons button.done_poly {
+      width: 75px;
+      height: 24px;
+      background-image: none;
+      background-color: #e1e1e1;
+      border: 1px solid #a1a1a1;
+      padding: 2px;
+      display: inline-block;
+      vertical-align: top; }
+    .paint-editor .controls .draw_buttons button.rectangle {
+      background-position: left top; }
+      .paint-editor .controls .draw_buttons button.rectangle:hover {
+        background-position: left -60px; }
+      .paint-editor .controls .draw_buttons button.rectangle.active {
+        background-position: left -120px; }
+    .paint-editor .controls .draw_buttons button.circle {
+      background-position: -60px top; }
+      .paint-editor .controls .draw_buttons button.circle:hover {
+        background-position: -60px -60px; }
+      .paint-editor .controls .draw_buttons button.circle.active {
+        background-position: -60px -120px; }
+    .paint-editor .controls .draw_buttons button.triangle {
+      background-position: -120px top; }
+      .paint-editor .controls .draw_buttons button.triangle:hover {
+        background-position: -120px -60px; }
+      .paint-editor .controls .draw_buttons button.triangle.active {
+        background-position: -120px -120px; }
+    .paint-editor .controls .draw_buttons button.polygon {
+      background-position: -180px top; }
+      .paint-editor .controls .draw_buttons button.polygon:hover {
+        background-position: -180px -60px; }
+      .paint-editor .controls .draw_buttons button.polygon.active {
+        background-position: -180px -120px; }
+    .paint-editor .controls .draw_buttons button.remove {
+      background-position: -240px top; }
+      .paint-editor .controls .draw_buttons button.remove:hover {
+        background-position: -240px -60px; }
+      .paint-editor .controls .draw_buttons button.remove.active {
+        background-position: -240px -120px; }
+    .paint-editor .controls .draw_buttons button.move_up {
+      background-position: -300px top; }
+      .paint-editor .controls .draw_buttons button.move_up:hover {
+        background-position: -300px -60px; }
+      .paint-editor .controls .draw_buttons button.move_up.active {
+        background-position: -300px -120px; }
+    .paint-editor .controls .draw_buttons button.move_down {
+      background-position: -360px top; }
+      .paint-editor .controls .draw_buttons button.move_down:hover {
+        background-position: -360px -60px; }
+      .paint-editor .controls .draw_buttons button.move_down.active {
+        background-position: -360px -120px; }
+    .paint-editor .controls .draw_buttons button.clone {
+      background-position: -420px top; }
+      .paint-editor .controls .draw_buttons button.clone:hover {
+        background-position: -420px -60px; }
+      .paint-editor .controls .draw_buttons button.clone.active {
+        background-position: -420px -120px; }
+    .paint-editor .controls .draw_buttons button.max_width {
+      background-position: -480px top; }
+      .paint-editor .controls .draw_buttons button.max_width:hover {
+        background-position: -480px -60px; }
+      .paint-editor .controls .draw_buttons button.max_width.active {
+        background-position: -480px -120px; }
+    .paint-editor .controls .draw_buttons button.max_height {
+      background-position: -540px top; }
+      .paint-editor .controls .draw_buttons button.max_height:hover {
+        background-position: -540px -60px; }
+      .paint-editor .controls .draw_buttons button.max_height.active {
+        background-position: -540px -120px; }
+    .paint-editor .controls .draw_buttons button.rotate {
+      background-position: -600px top; }
+      .paint-editor .controls .draw_buttons button.rotate:hover {
+        background-position: -600px -60px; }
+      .paint-editor .controls .draw_buttons button.rotate.active {
+        background-position: -600px -120px; }
+    .paint-editor .controls .draw_buttons button.add_poly_point {
+      background-position: -660px top; }
+      .paint-editor .controls .draw_buttons button.add_poly_point:hover {
+        background-position: -660px -60px; }
+      .paint-editor .controls .draw_buttons button.add_poly_point.active {
+        background-position: -660px -120px; }
+    .paint-editor .controls .draw_buttons button.delete_poly_point {
+      background-position: -720px top; }
+      .paint-editor .controls .draw_buttons button.delete_poly_point:hover {
+        background-position: -720px -60px; }
+      .paint-editor .controls .draw_buttons button.delete_poly_point.active {
+        background-position: -720px -120px; }
+    .paint-editor .controls .draw_buttons button.move_poly_point {
+      background-position: -780px top; }
+      .paint-editor .controls .draw_buttons button.move_poly_point:hover {
+        background-position: -780px -60px; }
+      .paint-editor .controls .draw_buttons button.move_poly_point.active {
+        background-position: -780px -120px; }
+  .paint-editor .controls .color {
+    width: 300px;
+    display: inline-block; }
+    .paint-editor .controls .color input[type="text"] {
+      width: 130px; }

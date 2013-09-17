@@ -6,6 +6,13 @@
         <button class="rectangle" title="add rectangle" ng-click="add_rectangle()"></button>
         <button class="circle" title="add oval" ng-click="add_oval()"></button>
         <button class="triangle" title="add triangle" ng-click="add_triangle()"></button>
+        <button ng_class="draw_button_class('polygon')" title="add polygon" ng-click="add_polygon()"></button>
+        <span class="poly_buttons" ng-show="show_poly_buttons()">
+        <button ng_class="draw_button_pp_class('add')" title="add poly point" ng-click="add_polygon_point()"></button>
+        <button ng_class="draw_button_pp_class('delete')" title="delete poly point" ng-click="delete_polygon_point()"></button>
+        <button ng_class="draw_button_pp_class('move')" title="move poly point" ng-click="move_polygon_point()"></button>
+        </span>
+        <button class="done_poly" ng-click="close_poly()">close poly</button>
         <button class="rotate" title="rotate" ng-click="rotate()"></button>
     </div>
     <div class="color">

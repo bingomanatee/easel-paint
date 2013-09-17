@@ -1,15 +1,22 @@
-.paint-editor .draw_buttons button {
-  width: 30px;
-  height: 30px;
-  background-image: url(/img/draw_icons.png);
-  background-position: left top;
-  background-repeat: no-repeat;
-  -webkit-appearance: none;
-  border: none;
-  background-color: transparent; }
 .paint-editor .controls .draw_buttons {
   width: 370px;
   display: inline-block; }
+  .paint-editor .controls .draw_buttons button {
+    width: 30px;
+    height: 30px;
+    background-image: url(/img/draw_icons.png);
+    background-position: left top;
+    background-repeat: no-repeat;
+    -webkit-appearance: none;
+    border: none;
+    background-color: transparent; }
+  .paint-editor .controls .draw_buttons button.done_poly {
+    width: 60px;
+    padding: 2px;
+    vertical-align: middle;
+    background-image: none;
+    background-color: #cccccc;
+    border: 1px solid #646464; }
   .paint-editor .controls .draw_buttons button.rectangle {
     background-position: left top; }
     .paint-editor .controls .draw_buttons button.rectangle:hover {
@@ -76,6 +83,24 @@
       background-position: -600px -60px; }
     .paint-editor .controls .draw_buttons button.rotate.active {
       background-position: -600px -120px; }
+  .paint-editor .controls .draw_buttons button.add_poly_point {
+    background-position: -660px top; }
+    .paint-editor .controls .draw_buttons button.add_poly_point:hover {
+      background-position: -660px -60px; }
+    .paint-editor .controls .draw_buttons button.add_poly_point.active {
+      background-position: -660px -120px; }
+  .paint-editor .controls .draw_buttons button.delete_poly_point {
+    background-position: -720px top; }
+    .paint-editor .controls .draw_buttons button.delete_poly_point:hover {
+      background-position: -720px -60px; }
+    .paint-editor .controls .draw_buttons button.delete_poly_point.active {
+      background-position: -720px -120px; }
+  .paint-editor .controls .draw_buttons button.move_poly_point {
+    background-position: -780px top; }
+    .paint-editor .controls .draw_buttons button.move_poly_point:hover {
+      background-position: -780px -60px; }
+    .paint-editor .controls .draw_buttons button.move_poly_point.active {
+      background-position: -780px -120px; }
 .paint-editor .controls .color {
   width: 300px;
   display: inline-block; }

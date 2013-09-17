@@ -1,23 +1,37 @@
 $icon_width: -60px;
 $icon_button_width: 30px;
-
+$button_bg: rgb(225,225,225);
 .paint-editor {
-  .draw_buttons button {
-    width: $icon_button_width;
-    height: $icon_button_width;
-    background-image: url(/img/draw_icons.png);
-    background-position: left top;
-    background-repeat: no-repeat;
-    -webkit-appearance: none;
-    border: none;
-    background-color: transparent;
-  }
 
   .controls {
-
+    height: $icon_button_width * 1.5;
+    display: block;
     .draw_buttons {
       width: 370px;
       display: inline-block;
+      button {
+        width: $icon_button_width;
+        height: $icon_button_width;
+        background-image: url(/img/draw_icons.png);
+        background-position: left top;
+        background-repeat: no-repeat;
+        -webkit-appearance: none;
+        border: none;
+        background-color: transparent;
+        top: 2px;
+        display: inline-block;
+        margin: 0px;
+      }
+      button.done_poly {
+        width: $icon_button_width * 2.5;
+        height: $icon_button_width * 0.8;
+        background-image: none;
+        background-color: $button_bg;
+        border: 1px solid darken($button_bg, 25%);
+        padding: 2px;
+        display: inline-block;
+        vertical-align: top; // strange requirement to fix chrome misaslignment
+      }
       button.rectangle {
         background-position: left top;
         &:hover {
@@ -118,6 +132,33 @@ $icon_button_width: 30px;
         }
         &.active {
           background-position: $icon_width * 10 $icon_width * 2;
+        }
+      }
+      button.add_poly_point {
+        background-position: $icon_width * 11 top;
+        &:hover {
+          background-position: $icon_width * 11 $icon_width;
+        }
+        &.active {
+          background-position: $icon_width * 11 $icon_width * 2;
+        }
+      }
+      button.delete_poly_point {
+        background-position: $icon_width * 12 top;
+        &:hover {
+          background-position: $icon_width * 12 $icon_width;
+        }
+        &.active {
+          background-position: $icon_width * 12 $icon_width * 2;
+        }
+      }
+      button.move_poly_point {
+        background-position: $icon_width * 13 top;
+        &:hover {
+          background-position: $icon_width * 13 $icon_width;
+        }
+        &.active {
+          background-position: $icon_width * 13 $icon_width * 2;
         }
       }
     }

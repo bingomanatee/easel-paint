@@ -39,155 +39,92 @@
 })(window);;(function (window) {
     var _DEBUG = false;
     var BOX_COLOR = 'rgba(0,0,0, 0.33)';
+    var BOX_SIZE = 15;
+
+    function Drag_Box(manager, h, v) {
+        this.manager = manager;
+        this.h = h;
+        this.v = v;
+        this.shape = new createjs.Shape();
+
+        var x = h ? 0 : -BOX_SIZE;
+        var y = v ? 0 : -BOX_SIZE;
+
+        this.shape.graphics.f(BOX_COLOR).r(x, y, BOX_SIZE, BOX_SIZE).ef();
+        manager.box_container.addChild(this.shape);
+
+        this.shape.addEventListener('mousedown', _.bind(this._on_mousedown, this));
+    }
+
+    Drag_Box.prototype = {
+        update: function () {
+            if (this.manager.active_shape) {
+                this.shape.visible = true;
+                if (this.v) { // bottom
+                    this.shape.y = this.manager.active_shape.get_bottom();
+                } else { //top
+                    this.shape.y = this.manager.active_shape.get_top();
+                }
+                if (this.h) { // right
+                    this.shape.x = this.manager.active_shape.get_right();
+                } else { // left
+                    this.shape.x = this.manager.active_shape.get_left();
+                }
+            } else {
+                this.shape.visible = false;
+            }
+        },
+
+        _on_mousedown: function (event) {
+            var as = this.manager.active_shape;
+            var self = this;
+            if (!as) {
+                return;
+            }
+            var left = as.get_left();
+            var right = as.get_right();
+            var top = as.get_top();
+            var bottom = as.get_bottom();
+            var width = as.get_width();
+            var height = as.get_height();
+            var min_size = this.manager.grid_size();
+            event.addEventListener('mousemove', function (e2) {
+                var dx = e2.stageX - event.stageX;
+                var dy = e2.stageY - event.stageY;
+
+                if (self.h) { // right
+                    as.set_width(self.manager.snap(Math.max(min_size, width + dx)));
+                } else { // left
+                    var new_x = self.manager.snap(Math.max(0, Math.min(right - min_size, left + dx)));
+                    as.set_left(new_x);
+                    as.set_width(width - (new_x - left));
+                }
+
+                if (self.v) { // bottom
+                    as.set_height(self.manager.snap(Math.max(min_size, height + dy)));
+                } else { // top
+                    var new_y = self.manager.snap(Math.max(0, Math.min(bottom - min_size, top + dy)));
+                    as.set_top(new_y);
+                    as.set_height(height - (new_y - top));
+                }
+                as.draw();
+                self.manager.update(false);
+            });
+        }
+    }
 
     function make_box_container(manager) {
-        manager.box_container = new createjs.Container();
-        manager.box_container.x = manager.box_container.y = manager.grid_size();
-        manager.stage.addChild(manager.box_container);
-    }
-
-    function move_around(dim, shape, manager, HANDLE_SIZE) {
-        return function (offset) {
-            var target = manager.active_shape;
-            if (!target) return;
-
-            if (dim.h) {
-                shape.x = target.get_right()
-            } else {
-                shape.x = target.get_left() - HANDLE_SIZE;
-            }
-
-            if (dim.v) {
-                shape.y = target.get_bottom();
-            } else {
-                shape.y = target.get_top() - HANDLE_SIZE;
-            }
-
-            if (offset){
-                shape.x += manager.grid_size();
-                shape.y += manager.grid_size();
-            }
-        }
-    }
-
-    function make_move_boxes(manager) {
-
-        manager.move_boxes = function () {
-
-            var HANDLE_SIZE = manager.grid_size();
-            var active_shape = manager.active_shape;
-
-            if (!active_shape) {
-                _.each(manager._boxes, function (box) {
-                    box.visible = false;
-                })
-            } else {
-              if (_DEBUG)  console.log('active shape x:', active_shape.get_x(), ',y:', active_shape.get_y(),
-                    'width:', active_shape.get_width(), ',h:', active_shape.get_height());
-                if (_DEBUG)    console.log('    left:', active_shape.get_left(), ', top:', active_shape.get_top(),
-                    ',right:', active_shape.get_right(), ',bottom:', active_shape.get_bottom()
-                );
-
-                _.each(manager._box_hs, function (boxes, i) {
-                    _.each(boxes, function (box) {
-                        box.visible = true;
-                        switch (i) {
-                            case 0:
-                                box.x = active_shape.get_left();
-                                break;
-
-                            case 1:
-                                box.x = active_shape.get_right() + HANDLE_SIZE;
-                                break;
-                        }
-                    });
-                })
-
-                _.each(manager._box_vs, function (boxes, i) {
-                    _.each(boxes, function (box) {
-                        box.visible = true;
-                        switch (i) {
-                            case 0:
-                                box.y = active_shape.get_top();
-                                break;
-
-                            case 1:
-                                box.y = active_shape.get_bottom() + HANDLE_SIZE;
-                                break;
-                        }
-                    });
-                })
-            }
-
-            manager.update();
-        }
+        manager.box_container = manager.add('container', true);
     }
 
     function make_boxes(manager) {
-
-        function gd(value) {
-            return value - (value % manager.grid_size());
-        }
-
-        var HANDLE_SIZE = manager.grid_size();
-
-        manager._box_hs = [
-            [],
-            []
-        ];
-        manager._box_vs = [
-            [],
-            []
+        manager.boxes = [
+            new Drag_Box(manager, 0, 0) ,
+            new Drag_Box(manager, 0, 1),
+            new Drag_Box(manager, 1, 0),
+            new Drag_Box(manager, 1, 1)
         ];
 
-        manager._boxes = _.map(
-            [
-                {h: 0, v: 0},
-                {h: 1, v: 0},
-                {h: 0, v: 1},
-                {h: 1, v: 1}
-            ], function (dim) {
-                var shape = new createjs.Shape();
-                manager.box_container.addChild(shape);
-                manager._box_hs[dim.h].push(shape);
-                manager._box_vs[dim.v].push(shape);
-
-                shape.graphics.f(BOX_COLOR).r(0, 0, HANDLE_SIZE, HANDLE_SIZE).es();
-                shape.__move_around = move_around(dim, shape, manager, HANDLE_SIZE);
-
-                shape.addEventListener('mousedown', function (event) {
-                    if (!manager.active_shape) return;
-
-                    event.addEventListener('mousemove', function (evt) {
-
-                        _.each(manager._box_hs[dim.h], function (shape) {
-                            shape.x = gd(evt.stageX);
-                        });
-                        _.each(manager._box_vs[dim.v], function (shape) {
-                            shape.y = gd(evt.stageY);
-                        });
-
-                        if (manager.active_shape) {
-                            var x = Math.min(manager._box_hs[1][0].x, manager._box_hs[0][0].x);
-                            var y = Math.min(manager._box_vs[1][0].y, manager._box_vs[0][0].y);
-
-                            var width = Math.max(manager.grid_size(), Math.max(manager._box_hs[1][0].x, manager._box_hs[0][0].x) - x - manager.grid_size());
-                            var height = Math.max(manager.grid_size(), Math.max(manager._box_vs[1][0].y, manager._box_vs[0][0].y) - y - manager.grid_size());
-
-                            manager.active_shape.set_width(width).set_height(height).set_x(x).set_y(y).draw();
-                            manager.update();
-                        }
-
-                        manager.update();
-                    });
-
-                });
-
-                return shape;
-
-            }, manager);
-
-        manager.show_boxes();
     }
 
     angular.module('Paint').factory('Paint_Manager_Boxes', function () {
@@ -198,21 +135,330 @@
 
             make_boxes(manager);
 
-            make_move_boxes(manager);
+        }
+
+    })
+})(window);;(function (window) {
+
+    var OUTLINE = 'rgb(204,0,0)';
+    var WHITE = 'rgb(255,255,255)';
+    var POINT_SIZE = 10;
+
+    angular.module('Paint').factory('Paint_Manager_Polygon', function () {
+
+        function add_point_to_poly(shape, manager) {
+            if (manager.active_shape && manager.active_shape.type == 'polygon') {
+                manager.active_shape.add_point(shape);
+                manager.active_shape.draw();
+            }
+        }
+
+        function _pp_mouse_down(shape, manager) {
+            return function (event) {
+                switch (manager.poly_point_mode) {
+                    case 'move':
+                        var ox = shape.x;
+                        var oy = shape.y;
+                        event.addEventListener('mousemove', function (mm_event) {
+                            var dx = mm_event.stageX - event.stageX;
+                            var dy = mm_event.stageY - event.stageY;
+                            shape.x = manager.snap(ox + dx);
+                            shape.y = manager.snap(oy + dy);
+                            manager.active_shape.draw();
+                            manager.update();
+                        });
+                        break;
+
+                    case 'delete':
+                        manager.active_shape.delete_point(shape);
+                        manager.ppp.removeChild(shape);
+                        manager.active_shape.draw();
+                        manager.update();
+                        break;
+
+                    case 'add':
+                        // currently disallowing adding points on same place.
+                        break;
+                }
+            }
+        }
+
+        function _pp_click(manager) {
+
+            return function (event) {
+                var shape = new createjs.Shape();
+                if (manager.poly_point_mode == 'add') {
+                    shape.x = manager.snap(event.stageX) - manager.margin() * 2;
+                    shape.y = manager.snap(event.stageY) - manager.margin() * 2;
+                    shape.graphics.f(WHITE).r(-POINT_SIZE / 2, -POINT_SIZE / 2, POINT_SIZE, POINT_SIZE)
+                        .s(OUTLINE).ss(1).r(-POINT_SIZE / 2, -POINT_SIZE / 2, POINT_SIZE, POINT_SIZE);
+
+                    shape.addEventListener('mousedown', _pp_mouse_down(shape, manager));
+
+                    console.log('clicked on pp shape');
+                    manager.ppp.addChild(shape);
+
+                    add_point_to_poly(shape, manager);
+                }
+                manager.update();
+            }
+        }
+
+        /**
+         * this creates a fairly involved layer for managing poly point data.
+         *
+         * - the main poly_points container, added to the manager
+         *   - a pp_shape, for catching cicks / adding points
+         *   - a poly points points container (ppp) for holding point objects
+         *     representing the path of the polygon
+         */
+        return function (manager) {
+
+            manager.poly_points = manager.add('container', true);
+            var pp_shape = new createjs.Shape(); // listens for clicks, to add points
+            pp_shape.graphics.f('rgba(255,255,255,0.01)').r(0, 0, manager.screen_width(), manager.screen_height()).ef();
+            manager.poly_points.addChild(pp_shape);
+
+            manager.ppp = new createjs.Container();
+            manager.ppp.x = manager.ppp.y = manager.margin();
+            manager.poly_points.addChild(manager.ppp);
+
+            manager.poly_points.visible = false;
+
+            pp_shape.addEventListener('mousedown', _pp_click(manager));
+
+            manager.scope.add_polygon = function () {
+                console.log('adding polygon');
+
+                manager.poly_points.visible = true;
+                manager.active_button = 'polygon';
+                manager.poly_point_mode = 'add';
+                manager.active_shape = manager.add_shape('polygon');
+                manager.update();
+            }
+
+            manager.scope.show_poly_buttons = function(){
+                return manager.poly_points.visible;
+            };
+
+            manager.scope.close_poly = function(){
+                manager.poly_points.visible = false;
+                manager.ppp.removeAllChildren();
+                manager.update();
+            }
+
+            manager.scope.add_polygon_point = function () {
+                manager.scope.poly_point_mode = manager.poly_point_mode = 'add';
+            }
+
+            manager.scope.delete_polygon_point = function () {
+                manager.scope.poly_point_mode = manager.poly_point_mode = 'delete';
+            }
+
+            manager.scope.move_polygon_point = function () {
+                manager.scope.poly_point_mode = manager.poly_point_mode = 'move';
+            }
+
+            manager.scope.draw_button_pp_class = function (which) {
+                var classes = [ which + '_poly_point'];
+                if (which == manager.poly_point_mode) classes.push('active');
+                return classes.join(' ');
+            }
+        }
+
+    })
+})(window);;(function (window) {
+
+    var GRID_COLOR = 'rgba(0,0,0, 0.25)';
+
+    var LEAP_GUIDE_COLOR = 'rgb(204,0,0)';
+    var LEAP_GUIDE_COLOR2 = 'rgba(0,153,0,0.5)';
+
+    var LEAP_MIN_THRESHOLD = 30;
+    var LEAP_MAJOR_THRESHOLD = 60;
+    var LEAP_EXT_THRESHOLD = 150;
+    var LEAP_Y_THRESHOLD = 250;
+
+    var INERTIA_RETICLE = 'rgb(204,0,0)';
+
+    var Z_INNER_PERCENT = 0.125;
+
+    angular.module('Paint').factory('Paint_Manager_Leap', function () {
+
+        function _x_guide(manager, color) {
+            var x_guide = manager.add('shape');
+            x_guide.x = manager.screen_width() / 2;
+            x_guide.graphics.ss(2).s(color).mt(0, 0).lt(0, manager.screen_height()).es();
+            return x_guide;
+        }
+
+        function _y_guide(manager, color) {
+            var y_guide = manager.add('shape');
+            y_guide.y = manager.screen_height() / 2;
+            y_guide.graphics.ss(2).s(color).mt(0, 0).lt(manager.screen_width(), 0).es();
+            return y_guide;
+        }
+
+        function _z_bubble(manager) {
+            // currently not used
+            manager.z_bubble_axis = manager.add('shape');
+            manager.z_bubble_axis.x = manager.screen_width() / 2;
+            manager.z_bubble_axis.y = manager.margin() / 2;
+            manager.z_bubble_axis.graphics.s(LEAP_GUIDE_COLOR2).ss(2)
+                .mt((manager.screen_width() / -2), 0)
+                .lt(manager.screen_width() * -Z_INNER_PERCENT, 0).es()
+                .s(LEAP_GUIDE_COLOR).mt(manager.screen_width() * Z_INNER_PERCENT, 0)
+                .lt(manager.screen_width() / 2, 0).es();
+
+            manager.z_bubble = manager.add('shape');
+            manager.z_bubble.graphics.f('rgb(0,0,0)').r(-10, -20, 10, 40).ef();
+        }
+
+        function make_leap_guides(manager) {
+            manager.ts = 0;
+            manager.inertia = 0;
+
+            manager.x_guide = _x_guide(manager, LEAP_GUIDE_COLOR);
+            manager.y_guide = _y_guide(manager, LEAP_GUIDE_COLOR);
+            manager.x_guide_2 = _x_guide(manager, LEAP_GUIDE_COLOR2);
+            manager.y_guide_2 = _y_guide(manager, LEAP_GUIDE_COLOR2);
+
+            manager.inertia_display = manager.add('shape');
+            manager.inertia_display.graphics.ss(1).s(LEAP_GUIDE_COLOR).dc(0, 0, 5);
+
+            manager.inertia_display_2 = manager.add('shape');
+            manager.inertia_display_2.graphics.ss(1).s(LEAP_GUIDE_COLOR2).dc(0, 0, 5);
+            manager.inertia = 0;
+            manager.inertia_2 = 1;
+        }
+
+        function _smooth(old_value, new_value, manager) {
+            if (!isNaN(new_value)) {
+                if (isNaN(old_value)) {
+                    return manager.snap(new_value);
+                } else {
+                    return  manager.snap(0.8 * old_value + 0.2 * new_value);
+                }
+            } else {
+                return manager.snap(old_value);
+            }
+        }
+
+        function _set_guides(manager, point, which) {
+
+            var x_guide = which == 1 ? this.x_guide_2 : this.x_guide;
+            var y_guide = which == 1 ? this.y_guide_2 : this.y_guide;
+            var point_x = this.snap((point[0] * this.screen_width()));
+            var y = 1 - point[1];
+            var point_y = this.snap(y * this.screen_height());
+            var inertial_display = (which == 1) ? this.inertia_display_2 : this.inertia_display;
+            var inertia_key = which == 0 ? 'inertia' : 'inertia_2';
+
+            if (point[3] > 30) {
+                this[inertia_key] -= 5;
+            } else {
+                ++this[inertia_key];
+            }
+
+            this[inertia_key] = Math.max(1, Math.min(1000, this[inertia_key]));
+
+            inertial_display.scaleX = inertial_display.scaleY = Math.sqrt(this[inertia_key] / 20);
+
+            if (this[inertia_key] > 50) {
+                inertial_display.visible = true;
+                this.update();
+                return;
+            } else {
+                inertial_display.visible = true;
+            }
+
+            inertial_display.x = x_guide.x = _smooth(x_guide.x, point_x, manager);
+            inertial_display.y = y_guide.y = _smooth(y_guide.y, point_y, manager);
+        }
+
+        function update_leap_guides(points, manager) {
+
+            _.each(points, function (point, i) {
+               _set_guides(manager, point, i);
+            });
+
+            if (manager.active_shape) {
+                manager.active_shape.set_x(Math.min(manager.x_guide.x, manager.x_guide_2.x) - manager.margin());
+                manager.active_shape.set_width(Math.abs(manager.x_guide.x - manager.x_guide_2.x));
+                manager.active_shape.set_y(Math.min(manager.y_guide.y, manager.y_guide_2.y) - manager.margin());
+                manager.active_shape.set_height(Math.abs(manager.y_guide.y - manager.y_guide_2.y));
+                manager.active_shape.draw();
+                manager.show_boxes(true);
+            }
+            manager.update();
+        }
+
+        function on_leap(manager) {
+
+            return function (obj) {
+                manager.ts = obj.timestamp;
+
+                if (obj.gestures && obj.gestures.length) {
+                    // console.log(obj.gestures);
+                    if (_.find(obj.gestures, function (g) {
+                        return g.type = 'keyTap'
+                    })) {
+                        manager.active_shape = null;
+                    }
+                }
+                if (obj.hands.length > 0) {
+                    // only continue if you have two hands
+
+                    // average all found points to a single point for each hand.
+
+                    var points = _.map(obj.hands, function (hand) {
+                        if ((!hand.fingers) || (!hand.fingers.length)) return false;
+
+                        var avg_finger = _.reduce(hand.fingers, function (out, finger) {
+                            var fsp = _.map(finger.stabilizedTipPosition, _.identity);
+                            //    console.log('tv:', finger.tipVelocity);
+                            fsp[3] = _.reduce(finger.tipVelocity, function (o, v) {
+                                return o + Math.abs(v)
+                            }, 0) / 3;
+
+                            return _.map(out, function (v, i) {
+                                return v + fsp[i];
+                            })
+                        }, [0, 0, 0, 0]);
+                        return _.map(avg_finger, function (v) {
+                            return v / hand.fingers.length;
+                        })
+                    });
+
+                        points = _.map(points, function (point) {
+                            var pd = obj.interactionBox.normalizePoint(point);
+                            point[0] = pd[0];
+                            point[1] = pd[1];
+                            point[2] = pd[2];
+                            return point;
+                        });
+
+                       update_leap_guides(points, manager);
+                }
+            };
+        }
+
+        return function (manager) {
+
+            if (window.Leap) {
+
+                make_leap_guides(manager);
+                window.Leap.loop({enableGestures: true}, on_leap(manager));
+            }
 
         }
 
     })
 })(window);;(function (window) {
 
-    var snap;
-
+    var temp_id = 0;
     function Point_Manager_Shape(manager, type) {
-
-        snap = function(n){
-            return Math.floor(n - manager.grid_size());
-        };
-
+        this._temp_id = ++temp_id;
         this.type = type;
         this.manager = manager;
         this.container = new createjs.Container();
@@ -225,12 +471,21 @@
 
     Point_Manager_Shape.prototype = {
 
+        identity: function(){
+            return this._id  | this._temp_id;
+        },
+
+        echo: function(msg){
+          console.log('ECHO:', msg || '', 'shape ', this.identity() , 'tl:', this.get_x(), this.get_y(), 'wh:', this.get_width(), this.get_height());
+        },
+
         init_dims: function () {
             this._rotation = 0;
             this._x = this._y = 0;
             this._width = this.manager.grid_size() * 4;
             this._height = this.manager.grid_size() * 4;
             this._color = 'rgb(0,0,0)';
+            this.points = [];
         },
 
         make_draggable: function () {
@@ -264,8 +519,6 @@
                 this.set_x(x);
                 this.set_y(y);
                 this.draw();
-                this.manager.move_boxes();
-
                 this.manager.update();
             }
         },
@@ -281,7 +534,7 @@
             this.shape.rotation = this.get_rotation();
             switch (this.type) {
                 case 'rectangle':
-                    this.shape.graphics.mt(-x2, -y2).lt(x2, -y2).lt(x2, y2).lt(-x2, y2).ef();
+                    this.shape.graphics.mt(-x2, -y2).lt(x2, -y2).lt(x2, y2).lt(-x2, y2);
                     break;
 
                 case 'oval':
@@ -304,9 +557,28 @@
                         .lt(x2, y2);
                     break;
 
+                case 'polygon':
+                    _.each(this.points, function(p, i){
+                        if (i == 0){
+                            this.shape.graphics.mt(p.x, p.y);
+                        } else {
+                            this.shape.graphics.lt(p.x, p.y);
+                        }
+                    }, this);
+                    break;
+
                 default:
                     throw new Error('bad type ' + this.type);
             }
+            this.shape.graphics.ef();
+        },
+
+        add_point: function(point_shape){
+          this.points.push(point_shape);
+        },
+
+        delete_point: function(point_shape){
+            this.points = _.reject(this.points, function(pp){return pp === point_shape;});
         },
 
         /* ******************** PROPERTIES ****************** */
@@ -370,6 +642,14 @@
 
         get_top: function () {
             return this.get_y();
+        },
+
+        set_top: function(top){
+            this.set_y(top);
+        },
+
+        set_left: function(left){
+            this.set_x(left);
         },
 
         get_bottom: function () {
@@ -544,22 +824,8 @@
     var DEFAULT_GRID_SIZE = 20;
     var DEFAULT_SCREEN_MARGIN = 50;
 
-    var LEAP_GUIDE_COLOR = 'rgb(204,0,0)';
-    var LEAP_GUIDE_COLOR2 = 'rgba(0,153,0,0.5)';
-
-    var LEAP_MIN_THRESHOLD = 30;
-    var LEAP_MAJOR_THRESHOLD = 60;
-    var LEAP_EXT_THRESHOLD = 150;
-    var LEAP_Y_THRESHOLD = 250;
-
-    var INERTIA_RETICLE = 'rgb(204,0,0)';
-
-    var Z_INNER_PERCENT = 0.125;
-
-    var snap;
-
     angular.module('Paint').factory('Paint_Manager',
-        function (Paint_Manager_Grid, Paint_Manager_Shape, Paint_Manager_Boxes, Color_Palette) {
+        function (Paint_Manager_Grid, Paint_Manager_Shape, Paint_Manager_Polygon, Paint_Manager_Boxes, Paint_Manager_Leap, Color_Palette) {
 
             function Paint_Manager(params) {
                 this.scope = params.scope;
@@ -572,17 +838,15 @@
                 this.stage = new createjs.Stage(canvas);
                 this.shapes = [];
 
-                this.make_grid();
-                var self = this;
-                snap = function (n, f) {
-                    if (f) return n[f] = snap(n[f]);
+                Paint_Manager_Grid.call(this);
 
-                    return n - (n % self.grid_size());
-                };
+                var self = this;
 
                 this.make_frame();
 
                 this.make_draw_container();
+
+                Paint_Manager_Polygon(this);
 
                 Paint_Manager_Boxes(this);
 
@@ -595,212 +859,25 @@
                     this.screen_height() - (4 * this.margin())
                 );
 
-                this.init_leap();
+                Paint_Manager_Leap(this);
 
                 this.update();
             }
 
             Paint_Manager.prototype = {
 
-                make_leap_guides: function () {
-                    this.x_guide = this.add('shape');
-                    this.x_guide.x = this.screen_width() / 2;
-                    this.x_guide.graphics.ss(2).s(LEAP_GUIDE_COLOR).mt(0, 0).lt(0, this.screen_height()).es();
-
-                    this.y_guide = this.add('shape');
-                    this.y_guide.y = this.screen_height() / 2;
-                    this.y_guide.graphics.ss(2).s(LEAP_GUIDE_COLOR).mt(0, 0).lt(this.screen_width(), 0).es();
-
-                    this.x_guide_2 = this.add('shape');
-                    this.x_guide_2.x = this.screen_width() / 2;
-                    this.x_guide_2.graphics.ss(2).s(LEAP_GUIDE_COLOR2).mt(0, 0).lt(0, this.screen_height()).es();
-
-                    this.y_guide_2 = this.add('shape');
-                    this.y_guide_2.y = this.screen_height() / 2;
-                    this.y_guide_2.graphics.ss(2).s(LEAP_GUIDE_COLOR2).mt(0, 0).lt(this.screen_width(), 0).es();
-
-                    this.inertia_display = this.add('shape');
-                    this.inertia_display.graphics.ss(1).s(LEAP_GUIDE_COLOR).dc(0, 0, 5);
-
-                    this.inertia_display_2 = this.add('shape');
-                    this.inertia_display_2.graphics.ss(1).s(LEAP_GUIDE_COLOR2).dc(0, 0, 5);
-                    this.inertia = 0;
-                    this.inertia_2 = 1;
-
-
-                    this.z_bubble_axis = this.add('shape');
-                    this.z_bubble_axis.x = this.screen_width() / 2;
-                    this.z_bubble_axis.y = this.margin() / 2;
-                    this.z_bubble_axis.graphics.s(LEAP_GUIDE_COLOR2).ss(2)
-                        .mt((this.screen_width() / -2), 0)
-                        .lt(this.screen_width() * -Z_INNER_PERCENT, 0).es()
-                        .s(LEAP_GUIDE_COLOR).mt(this.screen_width() * Z_INNER_PERCENT, 0)
-                        .lt(this.screen_width() / 2, 0).es();
-
-                    this.z_bubble = this.add('shape');
-                    this.z_bubble.graphics.f('rgb(0,0,0)').r(-10, -20, 10, 40).ef();
+                draw_button_class: function (class_name) {
+                    var classes = [class_name];
+                    if (this.active_button == class_name) classes.push('active');
+                    return classes.join(' ');
                 },
 
-                add: function (item) {
-                    switch (item) {
-                        case 'shape':
-                            var shape = new createjs.Shape();
-                            return this.add(shape);
-                            break;
-
-                        case 'container':
-                            var container = new createjs.Container();
-                            return this.add(container);
-                            break;
-
-                        default:
-                            this.stage.addChild(item);
-                            return item;
-                    }
-                },
-
-                init_leap: function () {
-                    if (window.Leap) {
-                        this.ts = 0;
-                        this.inertia = 0;
-
-                        this.make_leap_guides();
-
-                        window.Leap.loop({enableGestures: true}, _.bind(this._leaped, this));
-                    }
-
-                },
-
-                _set_guides: function (point, which) {
-
-                    var x_guide = which == 1 ? this.x_guide_2 : this.x_guide;
-                    var y_guide = which == 1 ? this.y_guide_2 : this.y_guide;
-                    var point_x = snap((point[0] * this.screen_width()));
-
-                    var inertial_display = (which == 1) ? this.inertia_display_2 : this.inertia_display;
-                    var inertia_key;
-                    if (which == 0) {
-                        inertia_key = 'inertia';
-                    } else {
-                        inertia_key = 'inertia_2';
-                    }
-
-                    if (point[3] > 30) {
-                        this[inertia_key] -= 5;
-                    } else {
-                        ++this[inertia_key];
-                    }
-
-                    this[inertia_key] = Math.max(1, Math.min(1000, this[inertia_key]));
-
-                    inertial_display.scaleX = inertial_display.scaleY = Math.sqrt(this[inertia_key] / 20);
-
-                    if (this[inertia_key] > 50) {
-                        inertial_display.visible = true;
-                        this.update();
-                        return;
-                    } else {
-                        inertial_display.visible = true;
-                    }
-
-                    var ox = x_guide.x;
-                    var oy = y_guide.y;
-
-                    if (!isNaN(point_x)) {
-                        if (isNaN(x_guide.x)) {
-                            x_guide.x = point_x
-                        } else {
-                            x_guide.x = 0.8 * x_guide.x + 0.2 * point_x;
-                        }
-                    }
-
-                    snap(x_guide, 'x');
-
-                    var y = 1 - point[1];
-
-                    var point_y = snap(y * this.screen_height());
-
-                    if (!isNaN(point_y)) {
-                        if (isNaN(y_guide.y)) {
-                            y_guide.y = point_y
-                        } else {
-                            y_guide.y = 0.8 * y_guide.y + 0.2 * point_y;
-                        }
-                    }
-
-                    snap(y_guide, 'y');
-
-                    inertial_display.x = x_guide.x;
-                    inertial_display.y = y_guide.y;
-
-                },
-
-                update_leap_guides: function (points, from_leap) {
-
-                    _.each(points, function (point, i) {
-                        this._set_guides(point, i);
-                    }, this);
-
-                    if (this.active_shape) {
-                        this.active_shape.set_x(Math.min(this.x_guide.x, this.x_guide_2.x) - this.margin());
-                        this.active_shape.set_width(Math.abs(this.x_guide.x - this.x_guide_2.x));
-                        this.active_shape.set_y(Math.min(this.y_guide.y, this.y_guide_2.y) - this.margin());
-                        this.active_shape.set_height(Math.abs(this.y_guide.y - this.y_guide_2.y));
-                        this.active_shape.draw();
-                        this.show_boxes(null, true);
-                    }
-                    this.update();
-                },
-
-                _leaped: function (obj) {
-                    var self = this;
-                    this.ts = obj.timestamp;
-
-                    if (obj.gestures && obj.gestures.length) {
-                       // console.log(obj.gestures);
-                        if (_.find(obj.gestures, function (g) {
-                            return g.type = 'keyTap'
-                        })) {
-                            this.active_shape = null;
-                            this.move_boxes(false);
-                        }
-                    }
-                    if (obj.hands.length > 0) {
-                        // only continue if you have two hands
-
-                        // average all found points to a single point for each hand.
-
-                        var points = _.map(obj.hands, function (hand) {
-                            if ((!hand.fingers) || (!hand.fingers.length)) return false;
-
-                            var avg_finger = _.reduce(hand.fingers, function (out, finger) {
-                                var fsp = _.map(finger.stabilizedTipPosition, _.identity);
-                                //    console.log('tv:', finger.tipVelocity);
-                                fsp[3] = _.reduce(finger.tipVelocity, function (o, v) {
-                                    return o + Math.abs(v)
-                                }, 0) / 3;
-
-                                return _.map(out, function (v, i) {
-                                    return v + fsp[i];
-                                })
-                            }, [0, 0, 0, 0]);
-                            return _.map(avg_finger, function (v) {
-                                return v / hand.fingers.length;
-                            })
-                        });
-
-                        if (true) {
-                            points = _.map(points, function (point) {
-                                var pd = obj.interactionBox.normalizePoint(point);
-                                point[0] = pd[0];
-                                point[1] = pd[1];
-                                point[2] = pd[2];
-                                return point;
-                            });
-
-                            self.update_leap_guides(points, true);
-                        }
-                    }
+                add_button_bindings: function () {
+                    this.scope.add_rectangle = this._shape_button_fn('rectangle');
+                    this.scope.add_oval = this._shape_button_fn('oval');
+                    this.scope.add_triangle = this._shape_button_fn('triangle');
+                    this.scope.rotate = _.bind(this.rotate, this);
+                    this.scope.draw_button_class = _.bind(this.draw_button_class, this);
                 },
 
                 add_form_bindings: function () {
@@ -821,24 +898,10 @@
 
                 },
 
-                show_boxes: function (force_show, offset) {
+                show_boxes: function () {
 
-                    if (force_show === false) {
-                        _.each(this._boxes, function (box) {
-                            box.visible = false
-                        });
-                        return this.update();
-                    }
-
-                    var target = this.active_shape;
-
-                    if (target && target.type == 'polygon') {
-                        target = false;
-                    }
-
-                    _.each(this._boxes, function (box) {
-                        box.visible = !!target;
-                        if (target) box.__move_around(target, offset);
+                    _.each(this.boxes, function (box) {
+                        box.shape_to_box();
                     }, this);
 
                     this.update();
@@ -851,7 +914,6 @@
 
                 activate: function (shape) {
                     this.active_shape = shape;
-                    this.move_boxes();
                 },
 
                 make_frame: function () {
@@ -859,13 +921,6 @@
                     this.frame.x = this.frame.y = this.margin();
 
                     this.add(this.frame);
-                },
-
-                add_button_bindings: function () {
-                    this.scope.add_rectangle = this._shape_button_fn('rectangle');
-                    this.scope.add_oval = this._shape_button_fn('oval');
-                    this.scope.add_triangle = this._shape_button_fn('triangle');
-                    this.scope.rotate = _.bind(this.rotate, this);
                 },
 
                 rotate: function () {
@@ -876,23 +931,10 @@
                     }
                 },
 
-                _shape_button_fn: function (type) {
-                    return _.bind(function () {
-                        this.add_shape(type);
-                    }, this);
-                },
-
-                shapes_to_dc: function () {
-                    this.draw_container.removeAllChildren();
-
-                    _.each(this.shapes, function (shape) {
-                        this.addChild(shape.container);
-                    }, this.draw_container);
-                },
-
                 add_shape: function (type) {
                     var shape = Paint_Manager_Shape(this, type);
                     shape.set_color(this.scope.current_color);
+                    this.active_shape = shape;
                     this.shapes.push(shape);
                     this.shapes_to_dc();
 
@@ -900,11 +942,16 @@
                     return shape;
                 },
 
-                update: function () {
+                update: function (no_boxes) {
+                    if (!no_boxes) {
+                        _.each(this.boxes, function (box) {
+                            box.update();
+                        });
+                    }
                     this.stage.update();
                 },
 
-                make_grid: Paint_Manager_Grid,
+                /* **************** PROPERTIES ********************* */
 
                 grid_size: function () {
                     var pc = this.scope.paint_canvas;
@@ -945,6 +992,49 @@
 
                     if (!pc || (!pc.height)) return DEFAULT_SCREEN_HEIGHT;
                     return Number(pc.height);
+                },
+
+                /* ************* UTILITY ****************** */
+
+                _shape_button_fn: function (type) {
+                    return _.bind(function () {
+                        this.add_shape(type);
+                    }, this);
+                },
+
+                shapes_to_dc: function () {
+                    this.draw_container.removeAllChildren();
+
+                    _.each(this.shapes, function (shape) {
+                        this.addChild(shape.container);
+                    }, this.draw_container);
+                },
+
+                snap: function (n, f) {
+                    if (f) return n[f] = this.snap(n[f]);
+
+                    return n - (n % this.grid_size());
+                },
+
+                add: function (item, indent) {
+                    switch (item) {
+                        case 'shape':
+                            var shape = new createjs.Shape();
+                            return this.add(shape);
+                            break;
+
+                        case 'container':
+                            var container = new createjs.Container();
+                            if (indent) {
+                                container.x = container.y = this.margin();
+                            }
+                            return this.add(container);
+                            break;
+
+                        default:
+                            this.stage.addChild(item);
+                            return item;
+                    }
                 }
 
             };
