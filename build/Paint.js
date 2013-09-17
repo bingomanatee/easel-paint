@@ -8,16 +8,15 @@
 
     angular.module('Paint').factory('Paint_Manager_Grid', function () {
 
-        return function () {
+        return function (manager) {
             console.log('making grid');
 
-            var width= this.screen_width(true);
-            var height = this.screen_height(true);
-            var grid_size = this.grid_size();
+            var width= manager.screen_width(true);
+            var height = manager.screen_height(true);
+            var grid_size = manager.grid_size();
 
-            console.log('width: ', width, 'heght:', height, 'grid_size:', grid_size);
             var grid_shape = new createjs.Shape();
-            grid_shape.x = grid_shape.y = this.margin();
+            grid_shape.x = grid_shape.y = manager.margin();
             var g = grid_shape.graphics.s(GRID_COLOR).ss(1);
 
             for (var x = 0; x <= width; x += grid_size){
@@ -30,8 +29,8 @@
 
             g.es();
 
-            this.stage.addChild(grid_shape);
-            this.stage.update();
+            manager.stage.addChild(grid_shape);
+            manager.stage.update();
 
         }
 
@@ -745,6 +744,50 @@
         }
 
     })
+})(window);;(function (window) {
+
+    var GRID_COLOR = 'rgba(0,0,0, 0.25)';
+
+    angular.module('Paint').factory('Paint_Manager_Move', function () {
+
+
+        return function (manager) {
+            function _shuffle(offset){
+                manager.shapes.unshift(null);
+                var active_index = _.indexOf(manager.shapes, manager.active_shape);
+                var other_index = active_index + offset;
+                var other = manager.shapes[other_index];
+                manager.shapes[other_index] =  manager.active_shape;
+                manager.shapes[active_index] = other;
+                manager.shapes = _.compact(manager.shapes);
+                manager.shapes_to_dc();
+                manager.update();
+            };
+
+            manager.scope.move_up = function () {
+                if (!manager.scope.show_move('up')) return;
+
+                _shuffle(-1);
+            };
+
+            manager.scope.move_down = function () {
+
+                if (!manager.scope.show_move('up')) return;
+
+                _shuffle(1);
+            };
+
+            manager.scope.show_move = function (which) {
+                if ((!manager.active_shape) || (manager.shapes.length < 2)) {
+                    return false;
+                }
+
+             return true;
+            };
+
+        }
+
+    })
 })(window);;(function () {
 
     var HUES = 18;
@@ -891,7 +934,7 @@
     var DEFAULT_SCREEN_MARGIN = 50;
 
     angular.module('Paint').factory('Paint_Manager',
-        function (Paint_Manager_Grid, Paint_Manager_Shape, Paint_Manager_Polygon, Paint_Manager_Boxes, Paint_Manager_Leap, Color_Palette) {
+        function (Paint_Manager_Grid, Paint_Manager_Shape, Paint_Manager_Polygon, Paint_Manager_Boxes, Paint_Manager_Leap, Color_Palette, Paint_Manager_Move) {
 
             function Paint_Manager(params) {
                 this.scope = params.scope;
@@ -904,7 +947,7 @@
                 this.stage = new createjs.Stage(canvas);
                 this.shapes = [];
 
-                Paint_Manager_Grid.call(this);
+                Paint_Manager_Grid(this);
 
                 var self = this;
 
@@ -915,6 +958,8 @@
                 Paint_Manager_Polygon(this);
 
                 Paint_Manager_Boxes(this);
+
+                Paint_Manager_Move(this);
 
                 this.add_button_bindings();
 

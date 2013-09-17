@@ -11,8 +11,10 @@
         <button ng_class="draw_button_pp_class('add')" title="add poly point" ng-click="add_polygon_point()"></button>
         <button ng_class="draw_button_pp_class('delete')" title="delete poly point" ng-click="delete_polygon_point()"></button>
         <button ng_class="draw_button_pp_class('move')" title="move poly point" ng-click="move_polygon_point()"></button>
-        </span>
         <button class="done_poly" ng-click="close_poly()">close poly</button>
+        </span>
+        <button class="move_up" title="move up" ng-show="show_move('up')" ng-click="move_up()"></button>
+        <button class="move_down" title="move down" ng-show="show_move('down')" ng-click="move_down()"></button>
         <button class="rotate" title="rotate" ng-click="rotate()"></button>
     </div>
     <div class="color">

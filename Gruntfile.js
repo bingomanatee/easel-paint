@@ -16,6 +16,7 @@ module.exports = function (grunt) {
                     'lib/paint/Manager/Polygon.js',
                     'lib/paint/Manager/Leap.js',
                     'lib/paint/Manager/Shape.js',
+                    'lib/paint/Manager/Move.js',
                     'lib/paint/Manager/Color_Palette.js',
                     'lib/paint/Manager.js',
                     'lib/paint/directives/editor.js'
