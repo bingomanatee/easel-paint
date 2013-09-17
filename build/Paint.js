@@ -244,6 +244,9 @@
             manager.scope.close_poly = function(){
                 manager.poly_points.visible = false;
                 manager.ppp.removeAllChildren();
+                if (manager.active_shape && manager.active_shape.type == 'polygon'){
+                    manager.active_shape.reflect_points();
+                }
                 manager.update();
             }
 
@@ -457,6 +460,7 @@
 })(window);;(function (window) {
 
     var temp_id = 0;
+
     function Point_Manager_Shape(manager, type) {
         this._temp_id = ++temp_id;
         this.type = type;
@@ -471,12 +475,12 @@
 
     Point_Manager_Shape.prototype = {
 
-        identity: function(){
-            return this._id  | this._temp_id;
+        identity: function () {
+            return this._id | this._temp_id;
         },
 
-        echo: function(msg){
-          console.log('ECHO:', msg || '', 'shape ', this.identity() , 'tl:', this.get_x(), this.get_y(), 'wh:', this.get_width(), this.get_height());
+        echo: function (msg) {
+            console.log('ECHO:', msg || '', 'shape ', this.identity(), 'tl:', this.get_x(), this.get_y(), 'wh:', this.get_width(), this.get_height());
         },
 
         init_dims: function () {
@@ -486,6 +490,62 @@
             this._height = this.manager.grid_size() * 4;
             this._color = 'rgb(0,0,0)';
             this.points = [];
+        },
+
+        point_width: function(){
+
+            if (!this.points.length) return 0;
+            var min_x = this.points[0].x;
+            var max_x = min_x;
+
+            _.each(this.points.slice(1), function (p) {
+                min_x = Math.min(min_x, p.x);
+                max_x = Math.max(max_x, p.x);
+            });
+
+            return max_x - min_x;
+        },
+        point_height: function(){
+
+            if (!this.points.length) return 0;
+            var min_y = this.points[0].y;
+            var max_y = min_y;
+
+            _.each(this.points.slice(1), function (p) {
+                min_y = Math.min(min_y, p.y);
+                max_y = Math.max(max_y, p.y);
+            });
+
+            return max_y - min_y;
+        },
+
+        reflect_points: function () {
+            if (!this.points.length) return;
+            var min_x = this.points[0].x;
+            var max_x = min_x;
+            var min_y = this.points[0].y;
+            var max_y = min_y;
+
+            _.each(this.points.slice(1), function (p) {
+                min_x = Math.min(min_x, p.x);
+                max_x = Math.max(max_x, p.x);
+                min_y = Math.min(min_y, p.y);
+                max_y = Math.max(max_y, p.y);
+            })
+
+            this.set_top(min_y + this.manager.margin());
+            this.set_left(min_x + this.manager.margin());
+
+            this.set_width(max_x - min_x);
+            this.set_height(max_y - min_y);
+            var dx =  this.get_width()/2 + min_x  ;
+            var dy =  this.get_height()/2 + min_y ;
+            _.each(this.points, function (p) {
+                p.x -= dx;
+                p.y -= dy;
+            });
+            this.reflected_points = true;
+            this.draw();
         },
 
         make_draggable: function () {
@@ -558,13 +618,17 @@
                     break;
 
                 case 'polygon':
-                    _.each(this.points, function(p, i){
-                        if (i == 0){
+                    _.each(this.points, function (p, i) {
+                        if (i == 0) {
                             this.shape.graphics.mt(p.x, p.y);
                         } else {
                             this.shape.graphics.lt(p.x, p.y);
                         }
                     }, this);
+                    if (this.reflected_points){
+                        this.shape.scaleX =this.get_width()/ this.point_width();
+                        this.shape.scaleY = this.get_height()/this.point_height();
+                    }
                     break;
 
                 default:
@@ -573,12 +637,14 @@
             this.shape.graphics.ef();
         },
 
-        add_point: function(point_shape){
-          this.points.push(point_shape);
+        add_point: function (point_shape) {
+            this.points.push(point_shape);
         },
 
-        delete_point: function(point_shape){
-            this.points = _.reject(this.points, function(pp){return pp === point_shape;});
+        delete_point: function (point_shape) {
+            this.points = _.reject(this.points, function (pp) {
+                return pp === point_shape;
+            });
         },
 
         /* ******************** PROPERTIES ****************** */
@@ -644,11 +710,11 @@
             return this.get_y();
         },
 
-        set_top: function(top){
+        set_top: function (top) {
             this.set_y(top);
         },
 
-        set_left: function(left){
+        set_left: function (left) {
             this.set_x(left);
         },
 
@@ -917,10 +983,7 @@
                 },
 
                 make_frame: function () {
-                    this.frame = new createjs.Container();
-                    this.frame.x = this.frame.y = this.margin();
-
-                    this.add(this.frame);
+                    this.frame = this.add('container', true);
                 },
 
                 rotate: function () {
