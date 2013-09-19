@@ -459,27 +459,117 @@
 })(window);;(function (window) {
 
     var temp_id = 0;
+    var type_indexes = {};
 
-    function Point_Manager_Shape(manager, type) {
+
+    function Point_Manager_Shape(manager, type, subs) {
         this._temp_id = ++temp_id;
+        this.checked = false;
         this.type = type;
         this.manager = manager;
         this.container = new createjs.Container();
         this.shape = new createjs.Shape();
+
         this.container.addChild(this.shape);
         this.init_dims();
+        if (subs){
+            switch(type){
+                case 'group':
+                    this.set_shapes(subs);
+                    break;
+
+                case 'polygon':
+                    this.points = subs;
+                    break;
+            }
+        }
         this.make_draggable();
         this.draw();
     }
 
     Point_Manager_Shape.prototype = {
 
+        crop_group: function () {
+            var x = this.shapes[0].get_x();
+            var y = this.shapes[0].get_y();
+
+            _.each(this.shapes, function (shape) {
+                x = Math.min(x, shape.get_x());
+                y = Math.min(y, shape.get_y());
+            });
+
+            this.set_x(x);
+            this.set_y(y);
+
+            _.each(this.shapes, function (shape) {
+                shape.add_x(-x);
+                shape.add_y(-y);
+            });
+
+            this.set_width(this.group_right());
+            this.set_height(this.group_bottom());
+        },
+
+        group_right: function () {
+            var right = this.shapes[0].get_right();
+            _.each(this.shapes, function(shape){
+                right = Math.max(right, shape.get_right());
+            })
+            return right;
+        },
+
+        group_bottom: function () {
+            var bottom = this.shapes[0].get_bottom();
+            _.each(this.shapes, function(shape){
+                bottom = Math.max(bottom, shape.get_bottom());
+            })
+            return bottom;
+        },
+
+        add_x: function (x) {
+            this.set_x(this.get_x() + x);
+        },
+
+        add_y: function (y) {
+            this.set_y(this.get_y() + y);
+        },
+
         identity: function () {
             return this._id | this._temp_id;
         },
 
+        get_name: function () {
+            if (!this.name) {
+                if (!type_indexes[this.type]) {
+                    type_indexes[this.type] = 0;
+                }
+                this.set_name(this.type + ' ' + ++type_indexes[this.type]);
+            }
+            return this.name;
+        },
+
+        get_parent: function () {
+            return this.parent;
+        },
+
+        set_parent: function (parent) {
+            this.parent = parent;
+        },
+
+        set_name: function (name) {
+            this.name = name;
+        },
+
         echo: function (msg) {
             console.log('ECHO:', msg || '', 'shape ', this.identity(), 'tl:', this.get_x(), this.get_y(), 'wh:', this.get_width(), this.get_height());
+        },
+
+        set_shapes: function (shapes) {
+            this.shapes = shapes;
+            _.each(shapes, function (shape) {
+                shape.parent = this;
+            }, this);
+            return this;
         },
 
         init_dims: function () {
@@ -489,9 +579,10 @@
             this._height = this.manager.grid_size() * 4;
             this._color = 'rgb(0,0,0)';
             this.points = [];
+            this.shapes = [];
         },
 
-        point_width: function(){
+        point_width: function () {
 
             if (!this.points.length) return 0;
             var min_x = this.points[0].x;
@@ -504,7 +595,7 @@
 
             return max_x - min_x;
         },
-        point_height: function(){
+        point_height: function () {
 
             if (!this.points.length) return 0;
             var min_y = this.points[0].y;
@@ -537,8 +628,8 @@
 
             this.set_width(max_x - min_x);
             this.set_height(max_y - min_y);
-            var dx =  this.get_width()/2 + min_x  ;
-            var dy =  this.get_height()/2 + min_y ;
+            var dx = this.get_width() / 2 + min_x;
+            var dy = this.get_height() / 2 + min_y;
             _.each(this.points, function (p) {
                 p.x -= dx;
                 p.y -= dy;
@@ -552,7 +643,7 @@
         },
 
         _on_mousedown: function (event) {
-            this.manager.activate(this);
+            this.manager.activate(this.parent ? this.parent : this);
             event.addEventListener('mousemove', _.bind(this._on_mousemove(event), this));
 
             event.addEventListener('mouseup', _.bind(this._on_mouseup, this));
@@ -562,29 +653,38 @@
         },
 
         _on_mousemove: function (event) {
-            var self = this;
-            var start_x = this.get_x();
-            var start_y = this.get_y();
+            var start_x, start_y, self = this;
+
+            if (this.parent) {
+                start_x = this.parent.get_x();
+                start_y = this.parent.get_y();
+            } else {
+                start_x = this.get_x();
+                start_y = this.get_y();
+
+            }
 
             return function (move_event) {
 
                 var x = start_x + move_event.stageX - event.stageX;
-                x = Math.max(0, Math.min(x, this.manager.screen_width(true) - this.get_width()));
-                x -= x % this.manager.grid_size();
+                x = self.manager.snap(Math.max(0, Math.min(x, this.manager.screen_width(true) - this.get_width())));
                 var y = start_y + move_event.stageY - event.stageY;
-                y = Math.max(0, Math.min(y, this.manager.screen_height(true) - this.get_height()));
-                y -= y % this.manager.grid_size();
+                y = self.manager.snap(Math.max(0, Math.min(y, this.manager.screen_height(true) - this.get_height())));
 
-                this.set_x(x);
-                this.set_y(y);
-                this.draw();
-                this.manager.update();
+                if (self.parent) {
+                    self.parent.set_x(x);
+                    self.parent.set_y(y);
+                } else {
+                    self.set_x(x);
+                    self.set_y(y);
+                    self.draw();
+                }
+                self.manager.update();
             }
         },
 
         draw: function () {
 
-            this.shape.graphics.c().f(this.get_color());
             var x2 = this.get_width() / 2;
             var y2 = this.get_height() / 2;
             this.shape.x = x2;
@@ -593,10 +693,13 @@
             this.shape.rotation = this.get_rotation();
             switch (this.type) {
                 case 'rectangle':
+                    this.shape.graphics.c().f(this.get_color());
                     this.shape.graphics.mt(-x2, -y2).lt(x2, -y2).lt(x2, y2).lt(-x2, y2);
+                    this.shape.graphics.ef();
                     break;
 
                 case 'oval':
+                    this.shape.graphics.c().f(this.get_color());
                     var diameter = Math.min(this.get_width(), this.get_height());
                     var radius = diameter / 2;
                     this.shape.graphics.dc(0, 0, radius);
@@ -608,15 +711,19 @@
                     } else if (this.get_width() < this.get_height()) {
                         this.shape.scaleY = this.get_height() / this.get_width();
                     }
+                    this.shape.graphics.ef();
                     break;
 
                 case 'triangle':
+                    this.shape.graphics.c().f(this.get_color());
                     this.shape.graphics.mt(-x2, y2)
                         .lt(0, -y2)
                         .lt(x2, y2);
+                    this.shape.graphics.ef();
                     break;
 
                 case 'polygon':
+                    this.shape.graphics.c().f(this.get_color());
                     _.each(this.points, function (p, i) {
                         if (i == 0) {
                             this.shape.graphics.mt(p.x, p.y);
@@ -624,16 +731,29 @@
                             this.shape.graphics.lt(p.x, p.y);
                         }
                     }, this);
-                    if (this.reflected_points){
-                        this.shape.scaleX =this.get_width()/ this.point_width();
-                        this.shape.scaleY = this.get_height()/this.point_height();
+                    if (this.reflected_points) {
+                        this.shape.scaleX = this.get_width() / this.point_width();
+                        this.shape.scaleY = this.get_height() / this.point_height();
                     }
+                    this.shape.graphics.ef();
+                    break;
+
+                case 'group':
+                    this.container.removeAllChildren();
+                    _.each(this.shapes, function (shape) {
+                        this.container.addChild(shape.container);
+                        //@TODO: cascade redraw?
+                    }, this);
+
+
+                    this.container.scaleX = this.get_width() / this.group_right();
+                    this.container.scaleY = this.get_height() / this.group_bottom();
+
                     break;
 
                 default:
                     throw new Error('bad type ' + this.type);
             }
-            this.shape.graphics.ef();
         },
 
         add_point: function (point_shape) {
@@ -739,8 +859,8 @@
 
     angular.module('Paint').factory('Paint_Manager_Shape', function () {
 
-        return function (manager, type) {
-            return new Point_Manager_Shape(manager, type);
+        return function (manager, type, subs) {
+            return new Point_Manager_Shape(manager, type, subs);
         }
 
     })
@@ -823,14 +943,14 @@
                     var x = w * i;
                     _.each([100, 50, 25, 10], function (sat, i) {
                         var swatch = self.make_swatch(hue, sat, value, x, SWATCH_HEIGHT * i, w, SWATCH_HEIGHT);
-                        swatch.addEventListener('mousedown', self.color_choice(hue, 100, value));
+                        swatch.addEventListener('mousedown', self.color_choice(hue, sat, value));
                         self.lighten.addChild(swatch);
                     });
 
 
                     _.each([100, 50, 25, 10], function (sat, i) {
                         swatch = self.make_swatch(hue, sat, 100 - value, x, -SWATCH_HEIGHT * i, w, SWATCH_HEIGHT);
-                        swatch.addEventListener('mousedown', self.color_choice(hue, 100, 100 - value));
+                        swatch.addEventListener('mousedown', self.color_choice(hue, sat, 100 - value));
                         self.darken.addChild(swatch);
                     });
                 });
@@ -933,11 +1053,16 @@
     var DEFAULT_GRID_SIZE = 20;
     var DEFAULT_SCREEN_MARGIN = 50;
 
+    function _is_checked(shape) {
+        return shape.checked;
+    }
+
     angular.module('Paint').factory('Paint_Manager',
         function (Paint_Manager_Grid, Paint_Manager_Shape, Paint_Manager_Polygon, Paint_Manager_Boxes, Paint_Manager_Leap, Color_Palette, Paint_Manager_Move) {
 
             function Paint_Manager(params) {
                 this.scope = params.scope;
+                this.scope.paint_manager = this;
                 var canvas = $(params.ele).find('canvas.paint-canvas')[0];
 
                 this.canvas = canvas;
@@ -976,6 +1101,14 @@
             }
 
             Paint_Manager.prototype = {
+                export: function () {
+                    var drawing = _.pluck(this, '_id');
+                    drawing.shapes = _.map(this.shapes, function () {
+                        return this.shapes.export()
+                    }, this);
+
+                    return drawing;
+                },
 
                 draw_button_class: function (class_name) {
                     var classes = [class_name];
@@ -994,6 +1127,18 @@
                 add_form_bindings: function () {
                     this.scope.set_current_color = _.bind(this.set_current_color, this);
                     this.scope.choose_color = _.bind(this.choose_color, this);
+
+                    this.scope.group_checked = _.bind(this._group_checked, this);
+                },
+
+                _group_checked: function () {
+                    var checked = _.filter(this.shapes, _is_checked);
+                    this.shapes = _.reject(this.shapes, _is_checked);
+                    this.active_shape = this.add_shape('group', checked);
+                    this.active_shape.crop_group();
+                    this.active_shape.draw();
+                    this.shapes_to_dc();
+                    this.update();
                 },
 
                 choose_color: function () {
@@ -1039,14 +1184,15 @@
                     }
                 },
 
-                add_shape: function (type) {
-                    var shape = Paint_Manager_Shape(this, type);
-                    shape.set_color(this.scope.current_color);
+                add_shape: function (type, subs) {
+                    var shape = Paint_Manager_Shape(this, type, subs);
                     this.active_shape = shape;
                     this.shapes.push(shape);
-                    this.shapes_to_dc();
-
-                    this.update();
+                    if (type != 'group') {
+                        shape.set_color(this.scope.current_color);
+                        this.shapes_to_dc();
+                        this.update();
+                    }
                     return shape;
                 },
 
@@ -1164,6 +1310,15 @@
             compile: function CompilingFunction($templateElement, $templateAttributes) {
 
                 return function LinkingFunction($scope, $linkElement, $linkAttributes) {
+                    $scope.show_drawing = true;
+
+                    $scope.tab_class = function (which) {
+                        if ((which == 'drawing') == $scope.show_drawing) {
+                            return 'tab active';
+                        } else {
+                            return 'tab';
+                        }
+                    }
                     console.log('attrs: ', $linkAttributes);
                     var width = Number($linkAttributes.width || 400);
                     var height = Number($linkAttributes.height || 300);
@@ -1171,7 +1326,7 @@
                     var margin = Number($linkAttributes.margin || 50);
                     $scope.paint_canvas = {width: width, height: height, grid: grid, margin: margin};
 
-                    $scope.current_color="rgb(255, 0, 0)";
+                    $scope.current_color = "rgb(255, 0, 0)";
 
                     $scope.paint_manager = Paint_Manager($scope, $linkElement);
 

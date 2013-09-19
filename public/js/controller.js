@@ -2,7 +2,7 @@
 
     function PaintCtrl($scope, $filter, $compile, $window){
        $scope.foo = "Foo";
-
+        $scope.show_drawing = true;
         $scope.$watch('current_color', function(color){
             console.log('current color set to ', color);
             if (color){
@@ -14,5 +14,6 @@
     PaintCtrl.$inject = ['$scope', '$filter', '$compile', '$window'];
 
     angular.module('PaintApp').controller('PaintCtrl', PaintCtrl);
+
 
 })(window);

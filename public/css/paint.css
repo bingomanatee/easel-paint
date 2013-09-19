@@ -1,3 +1,43 @@
+.paint-editor .tabs {
+  margin: 5px;
+  margin-bottom: 0; }
+  .paint-editor .tabs .tab {
+    display: inline-block;
+    min-width: 12em;
+    padding: 6px;
+    font-weight: bold;
+    font-family: "Helvetica Neue", Helvetica sans-serif;
+    font-size: 80%;
+    border: 1px solid black;
+    border-bottom: none;
+    margin-right: 1em;
+    background-color: #e1e1e1;
+    color: #969696; }
+  .paint-editor .tabs .tab.active {
+    color: black;
+    background-color: white; }
+.paint-editor .tab-panel {
+  margin: 5px;
+  margin-top: 0;
+  border: 1px solid black;
+  padding: 10px; }
+.paint-editor .manifest table {
+  border: 1px solid #969696;
+  min-width: 50em; }
+  .paint-editor .manifest table tr td, .paint-editor .manifest table tr th {
+    text-align: left;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 90%;
+    padding: 0.25em;
+    border: none;
+    margin: 0; }
+    .paint-editor .manifest table tr td .swatch, .paint-editor .manifest table tr th .swatch {
+      display: inline-block;
+      width: 1.5em;
+      margin: 3px;
+      height: 0.75em; }
+  .paint-editor .manifest table tr td {
+    border-top: 1px solid #969696; }
 .paint-editor .controls {
   height: 45px;
   display: block; }

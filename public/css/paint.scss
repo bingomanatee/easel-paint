@@ -1,7 +1,62 @@
 $icon_width: -60px;
 $icon_button_width: 30px;
-$button_bg: rgb(225,225,225);
+$button_bg: rgb(225, 225, 225);
 .paint-editor {
+
+  .tabs {
+    margin: 5px;
+    margin-bottom: 0;
+    .tab {
+      display: inline-block;
+      min-width: 12em;
+      padding: 6px;
+      font-weight: bold;
+      font-family: "Helvetica Neue", Helvetica sans-serif;
+      font-size: 80%;
+      border: 1px solid black;
+      border-bottom: none;
+      margin-right: 1em;
+      background-color: rgb(225,225,225);
+      color: rgb(150,150,150);
+    }
+    .tab.active{
+      color: black;
+      background-color: white;
+    }
+  }
+
+  .tab-panel {
+    margin: 5px;
+    margin-top: 0;
+    border: 1px solid black;
+    padding: 10px;
+  }
+
+  .manifest {
+    table {
+      border: 1px solid rgb(150,150,150);
+      min-width: 50em;
+      tr {
+        td, th {
+          text-align: left;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 90%;
+          padding: 0.25em;
+          border: none;
+          margin: 0;
+          .swatch {
+           display: inline-block;
+            width: 1.5em;
+            margin: 3px;
+            height: 0.75em;
+          }
+        }
+        td {
+          border-top: 1px solid rgb(150, 150, 150);
+        }
+      }
+    }
+  }
 
   .controls {
     height: $icon_button_width * 1.5;
@@ -30,7 +85,8 @@ $button_bg: rgb(225,225,225);
         border: 1px solid darken($button_bg, 25%);
         padding: 2px;
         display: inline-block;
-        vertical-align: top; // strange requirement to fix chrome misaslignment
+        vertical-align: top;
+        // strange requirement to fix chrome misaslignment
       }
       button.rectangle {
         background-position: left top;
@@ -166,7 +222,7 @@ $button_bg: rgb(225,225,225);
     .color {
       width: 300px;
       display: inline-block;
-      input[type="text"]{
+      input[type="text"] {
         width: 130px;
       }
     }
