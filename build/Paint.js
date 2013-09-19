@@ -472,8 +472,8 @@
 
         this.container.addChild(this.shape);
         this.init_dims();
-        if (subs){
-            switch(type){
+        if (subs) {
+            switch (type) {
                 case 'group':
                     this.set_shapes(subs);
                     break;
@@ -488,6 +488,84 @@
     }
 
     Point_Manager_Shape.prototype = {
+
+        /* ************** CLONING **************** */
+
+        clone: function (not_root) {
+            var clone;
+            switch (this.type) {
+                case 'group':
+
+                    var shape_clones = _.map(this.shapes, function (shape) {
+                        var c = shape.clone(true);
+                        c.set_parent();
+                        return c;
+                    });
+
+                    clone = not_root ? new Point_Manager_Shape(this.manager, this.type, shape_clones) : this.manager.add_shape(this.type, shape_clones);
+
+                    break;
+
+                case 'polygon':
+                    var point_clones = _.map(this.points, function (point) {
+                        return _.pick(point, 'x', 'y');
+                    });
+
+                    clone = not_root ? new Point_Manager_Shape(this.manager, this.type, point_clones) : this.manager.add_shape(this.type, point_clones);
+                    break;
+
+                default:
+                    clone = not_root ? new Point_Manager_Shape(this.manager, this.type) : this.manager.add_shape(this.type);
+            }
+            if (this.type != 'group') clone.set_color(this.get_color());
+
+            clone.set_x(this.get_x());
+            clone.set_y(this.get_y());
+            clone.set_width(this.get_width());
+            clone.set_height(this.get_height());
+            clone.set_rotation(this.get_rotation());
+
+            clone.draw();
+
+            return clone;
+        },
+
+        /* ************** GROUPING *************** */
+
+        /**
+         * Ungroup dumps the shapes into the root level of the manager, on top of all the other shapes.
+         *
+         * note - shapes are (poorly) scaled after being ungrouped.
+         *
+         */
+
+        ungroup: function () {
+            if (this.type == 'group') {
+                if (this.manager.active_shape === this) {
+                    this.manager.active_shape = null;
+                }
+                var x = this.get_x();
+                var y = this.get_y();
+                var sx = this.container.scaleX;
+                var sy = this.container.scaleY;
+                this.shapes.forEach(function (shape) {
+                    shape.add_x(x);
+                    shape.add_y(y);
+                    shape.scale_width(sx);
+                    shape.scale_height(sy);
+                    shape.set_parent(null);
+                    shape.draw();
+                });
+
+                this.manager.shapes = _.reject(this.manager.shapes, function (shape) {
+                    return shape._temp_id == this._temp_id;
+                }, this);
+                this.manager.shapes = this.manager.shapes.concat(this.shapes);
+                this.manager.shapes_to_dc();
+                this.manager.update();
+            }
+
+        },
 
         crop_group: function () {
             var x = this.shapes[0].get_x();
@@ -512,7 +590,7 @@
 
         group_right: function () {
             var right = this.shapes[0].get_right();
-            _.each(this.shapes, function(shape){
+            _.each(this.shapes, function (shape) {
                 right = Math.max(right, shape.get_right());
             })
             return right;
@@ -520,19 +598,14 @@
 
         group_bottom: function () {
             var bottom = this.shapes[0].get_bottom();
-            _.each(this.shapes, function(shape){
+            _.each(this.shapes, function (shape) {
                 bottom = Math.max(bottom, shape.get_bottom());
             })
             return bottom;
         },
 
-        add_x: function (x) {
-            this.set_x(this.get_x() + x);
-        },
 
-        add_y: function (y) {
-            this.set_y(this.get_y() + y);
-        },
+        /* ************* IDENTITY ******************* */
 
         identity: function () {
             return this._id | this._temp_id;
@@ -546,14 +619,6 @@
                 this.set_name(this.type + ' ' + ++type_indexes[this.type]);
             }
             return this.name;
-        },
-
-        get_parent: function () {
-            return this.parent;
-        },
-
-        set_parent: function (parent) {
-            this.parent = parent;
         },
 
         set_name: function (name) {
@@ -581,6 +646,8 @@
             this.points = [];
             this.shapes = [];
         },
+
+        /* *************** POINTS ****************** */
 
         point_width: function () {
 
@@ -638,6 +705,18 @@
             this.draw();
         },
 
+        add_point: function (point_shape) {
+            this.points.push(point_shape);
+        },
+
+        delete_point: function (point_shape) {
+            this.points = _.reject(this.points, function (pp) {
+                return pp === point_shape;
+            });
+        },
+
+        /* **************** EVENTS ********************* */
+
         make_draggable: function () {
             this.shape.addEventListener('mousedown', _.bind(this._on_mousedown, this));
         },
@@ -682,6 +761,8 @@
                 self.manager.update();
             }
         },
+
+        /* ******************** DRAW ******************* */
 
         draw: function () {
 
@@ -740,10 +821,28 @@
 
                 case 'group':
                     this.container.removeAllChildren();
-                    _.each(this.shapes, function (shape) {
-                        this.container.addChild(shape.container);
-                        //@TODO: cascade redraw?
-                    }, this);
+                    if (this.get_rotation()){
+                        var r_container = new createjs.Container();
+                         r_container.x = this.get_width()/2;
+                         r_container.y = this.get_height()/2;
+                        r_container.rotation = this.get_rotation();
+                        var r2 = new createjs.Container();
+                        r2.x = -r_container.x;
+                        r2.y = -r_container.y;
+                        r_container.addChild(r2);
+                        this.container.addChild(r_container);
+
+                        _.each(this.shapes, function (shape) {
+                            r2.addChild(shape.container);
+                            //@TODO: cascade redraw?
+                        }, this);
+                    }  else {
+                        _.each(this.shapes, function (shape) {
+                            this.container.addChild(shape.container);
+                            //@TODO: cascade redraw?
+                        }, this);
+                        }
+
 
 
                     this.container.scaleX = this.get_width() / this.group_right();
@@ -756,17 +855,15 @@
             }
         },
 
-        add_point: function (point_shape) {
-            this.points.push(point_shape);
-        },
-
-        delete_point: function (point_shape) {
-            this.points = _.reject(this.points, function (pp) {
-                return pp === point_shape;
-            });
-        },
-
         /* ******************** PROPERTIES ****************** */
+
+        get_parent: function (id) {
+            return this.parent ? (id ? this.parent.identity() : this.parent) : '';
+        },
+
+        set_parent: function (parent) {
+            this.parent = parent;
+        },
 
         set_rotation: function (r) {
             this._rotation = r % 360;
@@ -783,6 +880,9 @@
         set_color: function (color) {
             //@TODO: validate
             this._color = color;
+            _.each(this.shapes, function (shape) {
+                shape.set_color(color)
+            });
             this.draw();
             return this;
         },
@@ -800,6 +900,15 @@
             return this;
         },
 
+        scale_width: function (wx) {
+            this.set_width(this.get_width() * wx);
+        },
+
+
+        scale_height: function (hx) {
+            this.set_height(this.get_height() * hx);
+        },
+
         set_height: function (h) {
             this._height = h;
             return this;
@@ -807,6 +916,14 @@
 
         get_x: function () {
             return this._x;
+        },
+
+        add_x: function (x) {
+            this.set_x(this.get_x() + x);
+        },
+
+        add_y: function (y) {
+            this.set_y(this.get_y() + y);
         },
 
         get_center_h: function () {
@@ -1121,6 +1238,7 @@
                     this.scope.add_oval = this._shape_button_fn('oval');
                     this.scope.add_triangle = this._shape_button_fn('triangle');
                     this.scope.rotate = _.bind(this.rotate, this);
+                    this.scope.clone = _.bind(this.clone, this);
                     this.scope.draw_button_class = _.bind(this.draw_button_class, this);
                 },
 
@@ -1164,7 +1282,7 @@
                 },
 
                 make_draw_container: function () {
-                    this.draw_container = new createjs.Container();
+                    this.draw_container = this.add('container');
                     this.frame.addChild(this.draw_container);
                 },
 
@@ -1172,6 +1290,9 @@
                     this.active_shape = shape;
                 },
 
+                /**
+                 * probably deprectatable - redundant with draw_container.
+                 */
                 make_frame: function () {
                     this.frame = this.add('container', true);
                 },
@@ -1182,6 +1303,14 @@
                         this.active_shape.draw();
                         this.update();
                     }
+                },
+
+                clone: function(){
+                    if (this.active_shape) {
+                       this.active_shape.clone();
+                    }
+                    this.shapes_to_dc();
+                    this.update();
                 },
 
                 add_shape: function (type, subs) {

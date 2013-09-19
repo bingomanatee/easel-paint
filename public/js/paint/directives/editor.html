@@ -13,17 +13,21 @@
                 <button class="circle" title="add oval" ng-click="add_oval()"></button>
                 <button class="triangle" title="add triangle" ng-click="add_triangle()"></button>
                 <button ng_class="draw_button_class('polygon')" title="add polygon" ng-click="add_polygon()"></button>
-        <span class="poly_buttons" ng-show="show_poly_buttons()">
-        <button ng_class="draw_button_pp_class('add')" title="add poly point" ng-click="add_polygon_point()"></button>
-        <button ng_class="draw_button_pp_class('delete')" title="delete poly point"
-                ng-click="delete_polygon_point()"></button>
-        <button ng_class="draw_button_pp_class('move')" title="move poly point"
-                ng-click="move_polygon_point()"></button>
-        <button class="done_poly" ng-click="close_poly()">close poly</button>
-        </span>
-                <button class="move_up" title="move up" ng-show="show_move('up')" ng-click="move_up()"></button>
-                <button class="move_down" title="move down" ng-show="show_move('down')" ng-click="move_down()"></button>
-                <button class="rotate" title="rotate" ng-click="rotate()"></button>
+                <span class="poly_buttons" ng-show="show_poly_buttons()">
+                    <button ng_class="draw_button_pp_class('add')" title="add poly point"
+                            ng-click="add_polygon_point()"></button>
+                    <button ng_class="draw_button_pp_class('delete')" title="delete poly point"
+                            ng-click="delete_polygon_point()"></button>
+                    <button ng_class="draw_button_pp_class('move')" title="move poly point"
+                            ng-click="move_polygon_point()"></button>
+                    <button class="done_poly" ng-click="close_poly()">close poly</button>
+                </span>
+                <span class="active_shape_btns">
+                    <button class="move_up" title="move up" ng-show="show_move('up')" ng-click="move_up()"></button>
+                    <button class="move_down" title="move down" ng-show="show_move('down')" ng-click="move_down()"></button>
+                    <button class="rotate" title="rotate" ng-click="rotate()"></button>
+                    <button class="clone" title="clone" ng-click="clone()"></button>
+                </span>
             </div>
             <div class="color">
                 <label for="colorInput">Color</label>
@@ -51,7 +55,7 @@
             </thead>
             <tr ng-repeat="shape in paint_manager.shapes">
                 <td><input type="checkbox" name="group[]" ng-model="shape.checked"/></td>
-                <td>{{ shape.parent() }}</td>
+                <td>{{ shape.get_parent(1) }}</td>
                 <td>{{ shape.type }}</td>
                 <td>{{ shape.get_name() }}</td>
                 <td>{{ shape.get_left() }}</td>
@@ -62,7 +66,7 @@
                 <td><span ng-hide="shape.type == 'group'">
                     <span class="swatch" style="background-color: {{ shape.get_color() }}"></span>{{ shape.get_color() }}
                 </span>
-                <button ng-show="shape.type=='group'" ng-click="shape.ungroup()">Ungroup</button>
+                    <button ng-show="shape.type=='group'" ng-click="shape.ungroup()">Ungroup</button>
 
                 </td>
             </tr>
