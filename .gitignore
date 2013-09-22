@@ -2,3 +2,5 @@
 /.idea/
 /.DS_Store
 .DS_Store
+/public/js/vendor/angular/.DS_Store
+/public/js/vendor/.DS_Store

@@ -745,10 +745,10 @@
 
             return function (move_event) {
 
-                var x = start_x + move_event.stageX - event.stageX;
-                x = self.manager.snap(Math.max(0, Math.min(x, this.manager.screen_width(true) - this.get_width())));
-                var y = start_y + move_event.stageY - event.stageY;
-                y = self.manager.snap(Math.max(0, Math.min(y, this.manager.screen_height(true) - this.get_height())));
+                var x = self.manager.snap(start_x + move_event.stageX - event.stageX);
+                //  x = self.manager.snap(Math.max(0, Math.min(x, this.manager.screen_width(true) - this.get_width())));
+                var y = self.manager.snap(start_y + move_event.stageY - event.stageY);
+                // y = self.manager.snap(Math.max(0, Math.min(y, this.manager.screen_height(true) - this.get_height())));
 
                 if (self.parent) {
                     self.parent.set_x(x);
@@ -821,10 +821,10 @@
 
                 case 'group':
                     this.container.removeAllChildren();
-                    if (this.get_rotation()){
+                    if (this.get_rotation()) {
                         var r_container = new createjs.Container();
-                         r_container.x = this.get_width()/2;
-                         r_container.y = this.get_height()/2;
+                        r_container.x = this.get_width() / 2;
+                        r_container.y = this.get_height() / 2;
                         r_container.rotation = this.get_rotation();
                         var r2 = new createjs.Container();
                         r2.x = -r_container.x;
@@ -836,13 +836,12 @@
                             r2.addChild(shape.container);
                             //@TODO: cascade redraw?
                         }, this);
-                    }  else {
+                    } else {
                         _.each(this.shapes, function (shape) {
                             this.container.addChild(shape.container);
                             //@TODO: cascade redraw?
                         }, this);
-                        }
-
+                    }
 
 
                     this.container.scaleX = this.get_width() / this.group_right();
@@ -1218,6 +1217,7 @@
             }
 
             Paint_Manager.prototype = {
+                /* ********************** SCOPE BINDINGS *************** */
                 export: function () {
                     var drawing = _.pluck(this, '_id');
                     drawing.shapes = _.map(this.shapes, function () {
@@ -1240,12 +1240,22 @@
                     this.scope.rotate = _.bind(this.rotate, this);
                     this.scope.clone = _.bind(this.clone, this);
                     this.scope.draw_button_class = _.bind(this.draw_button_class, this);
+                    this.scope.remove_shape = _.bind(this.remove_shape, this);
+                },
+
+                remove_shape: function(){
+                    if (!this.active_shape) return;
+
+                    this.shapes = _.reject(this.shapes, function(shape){
+                         return shape === this.active_shape;
+                    }, this);
+                    this.active_shape = null;
+                    this.shapes_to_dc();
                 },
 
                 add_form_bindings: function () {
                     this.scope.set_current_color = _.bind(this.set_current_color, this);
                     this.scope.choose_color = _.bind(this.choose_color, this);
-
                     this.scope.group_checked = _.bind(this._group_checked, this);
                 },
 
@@ -1256,7 +1266,6 @@
                     this.active_shape.crop_group();
                     this.active_shape.draw();
                     this.shapes_to_dc();
-                    this.update();
                 },
 
                 choose_color: function () {
@@ -1270,15 +1279,6 @@
                         this.update();
                     }
 
-                },
-
-                show_boxes: function () {
-
-                    _.each(this.boxes, function (box) {
-                        box.shape_to_box();
-                    }, this);
-
-                    this.update();
                 },
 
                 make_draw_container: function () {
@@ -1310,7 +1310,6 @@
                        this.active_shape.clone();
                     }
                     this.shapes_to_dc();
-                    this.update();
                 },
 
                 add_shape: function (type, subs) {
@@ -1320,7 +1319,6 @@
                     if (type != 'group') {
                         shape.set_color(this.scope.current_color);
                         this.shapes_to_dc();
-                        this.update();
                     }
                     return shape;
                 },
@@ -1385,12 +1383,15 @@
                     }, this);
                 },
 
-                shapes_to_dc: function () {
+                shapes_to_dc: function (no_update) {
                     this.draw_container.removeAllChildren();
 
                     _.each(this.shapes, function (shape) {
                         this.addChild(shape.container);
                     }, this.draw_container);
+                    if (!no_update){
+                        this.update();
+                    }
                 },
 
                 snap: function (n, f) {
